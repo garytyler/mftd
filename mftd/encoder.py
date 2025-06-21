@@ -5,6 +5,7 @@ from mftd.constants import (
     SysexBool,
     EncoderIndicatorDisplayType,
     ColorValue,
+    DetentColorValues,
     EncoderMidiMessageType,
     EncoderMovementType,
     EncoderSwitchActionType,
@@ -51,7 +52,7 @@ class EncoderConfig(MutableMapping):
         encoder_midi_type: EncoderMidiMessageType = EncoderMidiMessageType.SEND_CC,
         active_color: ColorValue = ColorValue.DEFAULT_ACTIVE,
         inactive_color: ColorValue = ColorValue.DEFAULT_INACTIVE,
-        detent_color: ColorValue = ColorValue.DEFAULT_DETENT,
+        detent_color: DetentColorValues = DetentColorValues.PINK,
         indicator_display_type: EncoderIndicatorDisplayType = EncoderIndicatorDisplayType.BLENDED_BAR,
         is_super_knob: SysexBool = SysexBool.FALSE,
         encoder_shift_midi_channel: MidiChannel = MidiChannel.SHIFT,
@@ -67,7 +68,7 @@ class EncoderConfig(MutableMapping):
         self._encoder_midi_type: EncoderMidiMessageType = encoder_midi_type
         self._active_color: ColorValue = active_color
         self._inactive_color: ColorValue = inactive_color
-        self._detent_color: ColorValue = detent_color
+        self._detent_color: DetentColorValues = detent_color
         self._indicator_display_type: EncoderIndicatorDisplayType = (
             indicator_display_type
         )
@@ -206,7 +207,7 @@ class EncoderConfig(MutableMapping):
 
     @detent_color.setter
     def detent_color(self, value):
-        self._detent_color = ColorValue(value)
+        self._detent_color = DetentColorValues(value)
 
     @property
     def indicator_display_type(self):

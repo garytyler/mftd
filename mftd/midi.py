@@ -1,9 +1,90 @@
 from __future__ import annotations
 
 from typing import cast
+import time
 
 from mftd import MftSysexApi, DeviceConfig, EncoderConfig, constants
 from mftd.protocol import MidiInput, MidiOutput
+
+
+class TdMidiInput(MidiInput):
+    """MidiInput wrapper for TouchDesigner."""
+
+    def __init__(self, chop=None, event_dat=None) -> None:
+        import td  # type: ignore
+
+        self.chop = chop if chop else td.midiinCHOP
+        self.event_dat = event_dat if event_dat else getattr(td, "midieventDAT", None)
+        self.row = 0
+
+    def get_port_count(self) -> int:  # pragma: no cover - TD only
+        return 1
+
+    def get_port_name(self, port: int) -> str:  # pragma: no cover - TD only
+        if hasattr(self.chop, "name"):
+            return self.chop.name
+        return "midiinCHOP"
+
+    def open_port(self, port: int) -> None:  # pragma: no cover - TD only
+        self.row = 0
+
+    def close_port(self) -> None:  # pragma: no cover - TD only
+        pass
+
+    def ignore_types(self, sysex: bool, timing: bool, active_sense: bool) -> None:  # pragma: no cover - TD only
+        pass
+
+    def get_message(self):  # pragma: no cover - TD only
+        if not self.event_dat:
+            return None
+        if self.row >= self.event_dat.numRows:
+            return None
+        try:
+            cell = self.event_dat[self.row, "bytes"]
+        except Exception:
+            return None
+        data = []
+        if cell and getattr(cell, "val", None):
+            for item in str(cell.val).split():
+                try:
+                    data.append(int(item, 0))
+                except ValueError:
+                    pass
+        self.row += 1
+        return (data, time.time())
+
+
+class TdMidiOutput(MidiOutput):
+    """MidiOutput wrapper for TouchDesigner."""
+
+    def __init__(self, chop=None) -> None:
+        import td  # type: ignore
+
+        self.chop = chop if chop else td.midioutCHOP
+
+    def get_port_count(self) -> int:  # pragma: no cover - TD only
+        return 1
+
+    def get_port_name(self, port: int) -> str:  # pragma: no cover - TD only
+        if hasattr(self.chop, "name"):
+            return self.chop.name
+        return "midioutCHOP"
+
+    def open_port(self, port: int) -> None:  # pragma: no cover - TD only
+        pass
+
+    def close_port(self) -> None:  # pragma: no cover - TD only
+        pass
+
+    def ignore_types(self, sysex: bool, timing: bool, active_sense: bool) -> None:  # pragma: no cover - TD only
+        pass
+
+    def send_message(self, message):  # pragma: no cover - TD only
+        if hasattr(self.chop, "send"):
+            try:
+                self.chop.send(*list(message))
+            except Exception:
+                pass
 
 
 class MftApi:
@@ -89,9 +170,7 @@ def create_midi_input() -> MidiInput | None:
 
         return cast(MidiInput, midi_in)
     elif is_td_available():
-        import td
-
-        return cast(MidiInput, td.midiinCHOP)
+        return TdMidiInput()
     return None
 
 
@@ -110,9 +189,7 @@ def create_midi_output() -> MidiOutput | None:
 
         return cast(MidiOutput, midi_out)
     elif is_td_available():
-        import td
-
-        return cast(MidiOutput, td.midioutCHOP)
+        return TdMidiOutput()
     return None
 
 
