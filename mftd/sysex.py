@@ -18,18 +18,8 @@ class MftSysexApi:
     def set_device_config(
         midi_out: MidiOutput,
         config: DeviceConfig,
-        encoder0: EncoderConfig | None = None,
     ) -> None:
-        """Send the full :class:`DeviceConfig` to the device.
-
-        According to community knowledge (mirrored from the reference Java
-        implementation) the global configuration push must also include the
-        settings of the first encoder.  The device firmware expects these values
-        alongside the global settings or it may reboot into an unexpected state.
-        """
-
-        if encoder0 is None:
-            encoder0 = EncoderConfig()
+        """Send the full :class:`DeviceConfig` to the device."""
 
         def _int(value: int) -> int:
             if hasattr(value, "value"):
@@ -38,22 +28,7 @@ class MftSysexApi:
 
         pairs: list[int] = []
 
-        # Global settings addresses 0-9 in ascending order
-        for addr in range(0, 10):
-            if addr in config.ADDRESSES_TO_NAMES:
-                val = config[addr]
-                if val is not None:
-                    pairs.extend([addr, _int(val)])
-
-        # Encoder 0 configuration addresses 10-24
-        for addr in range(10, 25):
-            if addr in encoder0.ADDRESSES_TO_NAMES:
-                val = encoder0[addr]
-                if val is not None:
-                    pairs.extend([addr, _int(val)])
-
-        # Remaining global addresses
-        for addr in (31, 32):
+        for addr in config.ADDRESSES_TO_NAMES:
             val = config[addr]
             if val is not None:
                 pairs.extend([addr, _int(val)])
@@ -135,6 +110,8 @@ class MftSysexApi:
         config: EncoderConfig,
     ) -> None:
         """Send an `EncoderConfig` for a specific encoder."""
+
+        sysex_tag = encoder_index + 1
         params: List[int] = []
         for name, address in config.NAMES_TO_ADDRESSES.items():
             value = config[name]
@@ -149,33 +126,69 @@ class MftSysexApi:
                 params.extend([address, int_value])
         if not params:
             return
-        bytes_remaining = len(params)
-        total_parts = (
-            bytes_remaining + constants.PART_SIZE_BYTES - 1
-        ) // constants.PART_SIZE_BYTES
-        sysex_tag = encoder_index + 1
-        part = 1
-        while params:
-            size = min(len(params), constants.PART_SIZE_BYTES)
-            payload = (
-                [
-                    0xF0,
-                    constants.MIDI_MFR_ID_0,
-                    constants.MIDI_MFR_ID_1,
-                    constants.MIDI_MFR_ID_2,
-                    constants.SysexCommands.BULK_XFER,
-                    0x00,
-                    sysex_tag,
-                    part,
-                    total_parts,
-                    size,
-                ]
-                + params[:size]
-                + [0xF7]
-            )
-            MftSysexApi._send_sysex(midi_out, payload)
-            params = params[size:]
-            part += 1
+
+        if params:
+            bytes_remaining = len(params)
+            total_parts = (
+                bytes_remaining + constants.PART_SIZE_BYTES - 1
+            ) // constants.PART_SIZE_BYTES
+            for part in range(1, total_parts + 1):
+                size = (
+                    bytes_remaining
+                    if bytes_remaining <= constants.PART_SIZE_BYTES
+                    else constants.PART_SIZE_BYTES
+                )
+                bytes_remaining -= constants.PART_SIZE_BYTES
+
+                payload = (
+                    [0xF0]
+                    + [
+                        constants.MIDI_MFR_ID_0,
+                        constants.MIDI_MFR_ID_1,
+                        constants.MIDI_MFR_ID_2,
+                    ]
+                    + [
+                        constants.SysexCommands.BULK_XFER,
+                        0x00,
+                        sysex_tag,
+                        part,
+                        total_parts,
+                        size,
+                    ]
+                    + params[:size]
+                    + [0xF7]
+                )
+                params = params[size:]
+
+                MftSysexApi._send_sysex(midi_out, payload)
+
+        # bytes_remaining = len(params)
+        # total_parts = (
+        #     bytes_remaining + constants.PART_SIZE_BYTES - 1
+        # ) // constants.PART_SIZE_BYTES
+        # sysex_tag = encoder_index + 1
+        # part = 1
+        # while params:
+        #     size = min(len(params), constants.PART_SIZE_BYTES)
+        #     payload = (
+        #         [
+        #             0xF0,
+        #             constants.MIDI_MFR_ID_0,
+        #             constants.MIDI_MFR_ID_1,
+        #             constants.MIDI_MFR_ID_2,
+        #             constants.SysexCommands.BULK_XFER,
+        #             0x00,
+        #             sysex_tag,
+        #             part,
+        #             total_parts,
+        #             size,
+        #         ]
+        #         + params[:size]
+        #         + [0xF7]
+        #     )
+        #     params = params[size:]
+        #     MftSysexApi._send_sysex(midi_out, payload)
+        #     part += 1
 
     @staticmethod
     def get_encoder_config(

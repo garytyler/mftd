@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10,<4.0"
 authors = [ { name = "Gary Tyler", email = "mail@garytyler.com" } ]
 dependencies = [
+    "black>=25.1.0",
     "python-rtmidi>=1.5.8",
 ]
 
