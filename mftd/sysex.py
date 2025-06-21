@@ -113,17 +113,18 @@ class MftSysexApi:
 
         sysex_tag = encoder_index + 1
         params: List[int] = []
+        defaults = EncoderConfig()
         for name, address in config.NAMES_TO_ADDRESSES.items():
             value = config[name]
-            if value is not None:
-                # Convert value to int if it's an enum or other object
-                if hasattr(value, "value"):
-                    # Handle enum types
-                    int_value = value.value
-                else:
-                    # Handle regular ints and booleans
-                    int_value = int(value)
-                params.extend([address, int_value])
+            if value is None:
+                continue
+            if getattr(defaults, name) == value:
+                continue
+            if hasattr(value, "value"):
+                int_value = value.value
+            else:
+                int_value = int(value)
+            params.extend([address, int_value])
         if not params:
             return
 
