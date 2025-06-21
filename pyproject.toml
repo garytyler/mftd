@@ -3,19 +3,17 @@ name = "mftd"
 version = "0.1.0"
 description = "Python Midi Fighter Twister configuration for Touch Designer"
 readme = "README.md"
-requires-python = ">=3.10,<4.0"
+requires-python = "==3.11.1"
 authors = [ { name = "Gary Tyler", email = "mail@garytyler.com" } ]
-dependencies = [
-    "black>=25.1.0",
-    "python-rtmidi>=1.5.8",
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
+    "python-rtmidi>=1.5.8",
     "pytest>=6.2.5",
     "pytest-mock>=3.6.1",
+    "black>=25.1.0",
     "mypy>=1.5.1",
-    "black>=22.3.0",
     "isort[colors]>=5.9.3",
     "flake8>=7.0.0",
 ]
