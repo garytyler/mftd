@@ -67,16 +67,15 @@ def test_get_global_config(rtmidi_stub):
 def test_set_encoder_config(rtmidi_stub):
     api = MftSysexApi
     out = rtmidi_stub.MidiOut()
-    cfg = EncoderConfig()
+    cfg = EncoderConfig(0)
     cfg.active_color = constants.ColorValue.RED
 
     api.set_encoder_config(out, 0, cfg)
 
-    msg = out.messages[-1]
-    assert msg[0] == 0xF0
-    assert msg[4] == constants.SysexCommands.BULK_XFER
-    assert constants.ColorValue.RED in msg
-    assert msg[-1] == 0xF7
+    assert out.messages[0][0] == 0xF0
+    assert out.messages[0][4] == constants.SysexCommands.BULK_XFER
+    assert constants.ColorValue.RED in out.messages[0]
+    assert out.messages[0][-1] == 0xF7
 
 
 def test_get_encoder_config(rtmidi_stub):
@@ -85,6 +84,9 @@ def test_get_encoder_config(rtmidi_stub):
     inp = rtmidi_stub.MidiIn()
     consts = constants
 
+    # Find the address for encoder_midi_number in EncoderConfig
+    encoder_midi_number_addr = EncoderConfig.NAMES_TO_ADDRESSES["encoder_midi_number"]
+
     resp = [
         0xF0,
         consts.MIDI_MFR_ID_0,
@@ -92,10 +94,12 @@ def test_get_encoder_config(rtmidi_stub):
         consts.MIDI_MFR_ID_2,
         consts.SysexCommands.BULK_XFER,
         0x00,
-        1,
-        1,
-        1,
-        4,
+        1,  # sysex_tag
+        1,  # part
+        1,  # total
+        6,  # size updated to include the new field
+        encoder_midi_number_addr,  # Add address for encoder_midi_number
+        0,  # Value for encoder_midi_number (using the test index)
         19,
         consts.ColorValue.BLUE,
         21,

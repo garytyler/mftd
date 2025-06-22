@@ -62,10 +62,10 @@ class EncoderConfig(MutableMapping):
         self.switch_action_type = switch_action_type
         self.switch_midi_channel = switch_midi_channel
         self.encoder_midi_channel = encoder_midi_channel
-        # self.switch_midi_number = switch_midi_number # Set with `midi_number`
+        self.switch_midi_number = midi_number  # Set with `midi_number`
         self.switch_midi_type = switch_midi_type
         self.encoder_midi_channel = encoder_midi_channel
-        # self.encoder_midi_number = encoder_midi_number # Set with `midi_number`
+        self.encoder_midi_number = midi_number  # Set with `midi_number`
         self.encoder_midi_type = encoder_midi_type
         self.active_color = active_color
         self.inactive_color = inactive_color
@@ -121,7 +121,7 @@ class EncoderConfig(MutableMapping):
 
     @switch_midi_number.setter
     def switch_midi_number(self, value):
-        raise AttributeError("Set `midi_number` property instead.")
+        self._midi_number = int(value)
 
     @property
     def switch_midi_type(self):
@@ -145,7 +145,7 @@ class EncoderConfig(MutableMapping):
 
     @encoder_midi_number.setter
     def encoder_midi_number(self, value):
-        raise AttributeError("Set `midi_number` property instead.")
+        self._midi_number = int(value)
 
     @property
     def encoder_midi_type(self):
