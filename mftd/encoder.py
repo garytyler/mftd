@@ -13,9 +13,6 @@ from mftd.constants import (
 )
 
 
-# Reference: https://github.com/sina-cb/mftd/blob/935f59d656fbd576547ea18a3a58489a5eb7a5c2/mftd/src/device_settings.py
-
-
 @dataclass
 class EncoderConfig(MutableMapping):
     """Configuration values for a single encoder."""
@@ -41,15 +38,16 @@ class EncoderConfig(MutableMapping):
 
     def __init__(
         self,
+        midi_number: int,
         *,
         detent: bool | SysexBool = SysexBool.FALSE,
         movement_type: EncoderMovementType = EncoderMovementType.DIRECT_HIGH_RESOLUTION,
         switch_action_type: EncoderSwitchActionType = EncoderSwitchActionType.CC_HOLD,
         switch_midi_channel: MidiChannel = MidiChannel.SWITCH_AND_COLOR,
-        switch_midi_number: int = 1,
+        # switch_midi_number: int = 1, # Set with `midi_number`
         switch_midi_type: int = 0,
         encoder_midi_channel: MidiChannel = MidiChannel.ROTARY_ENCODER,
-        encoder_midi_number: int = 1,
+        # encoder_midi_number: int = 1, # Set with `midi_number`
         encoder_midi_type: EncoderMidiMessageType = EncoderMidiMessageType.SEND_CC,
         active_color: ColorValue = ColorValue.DEFAULT_ACTIVE,
         inactive_color: ColorValue = ColorValue.DEFAULT_INACTIVE,
@@ -58,14 +56,16 @@ class EncoderConfig(MutableMapping):
         is_super_knob: bool | SysexBool = SysexBool.FALSE,
         encoder_shift_midi_channel: MidiChannel = MidiChannel.SHIFT,
     ):
+        self.midi_number = midi_number
         self.detent = detent
         self.movement_type = movement_type
         self.switch_action_type = switch_action_type
         self.switch_midi_channel = switch_midi_channel
-        self.switch_midi_number = switch_midi_number
+        self.encoder_midi_channel = encoder_midi_channel
+        # self.switch_midi_number = switch_midi_number # Set with `midi_number`
         self.switch_midi_type = switch_midi_type
         self.encoder_midi_channel = encoder_midi_channel
-        self.encoder_midi_number = encoder_midi_number
+        # self.encoder_midi_number = encoder_midi_number # Set with `midi_number`
         self.encoder_midi_type = encoder_midi_type
         self.active_color = active_color
         self.inactive_color = inactive_color
@@ -74,43 +74,14 @@ class EncoderConfig(MutableMapping):
         self.is_super_knob = is_super_knob
         self.encoder_shift_midi_channel = encoder_shift_midi_channel
 
-    def __getitem__(self, key: int | str):
-        if isinstance(key, int):
-            name = self.ADDRESSES_TO_NAMES[key]
-        elif key in self.NAMES_TO_ADDRESSES:
-            name = key
-        else:
-            raise KeyError(f"Invalid config property: {key}")
-        return getattr(self, name)
+    @property
+    def midi_number(self):
+        return self._midi_number
 
-    def __setitem__(self, key: int | str, value: int):
-        if isinstance(key, int):
-            name = self.ADDRESSES_TO_NAMES[key]
-        elif key in self.NAMES_TO_ADDRESSES:
-            name = key
-        else:
-            raise KeyError(f"Invalid config property: {key}")
-        setattr(self, name, value)
-
-    def __delitem__(self, key):
-        raise NotImplementedError("Cannot delete config items")
-
-    def __iter__(self):
-        return iter(self.ADDRESSES_TO_NAMES)
-
-    def __len__(self):
-        return len(self.ADDRESSES_TO_NAMES)
-
-    def __str__(self) -> str:
-        lines = [f"{self.__class__.__name__}("]
-        for name in self.ADDRESSES_TO_NAMES.values():
-            value = getattr(self, name)
-            if hasattr(value, "name"):
-                value_str = f"{value.__class__.__name__}.{value.name}"
-            else:
-                value_str = repr(value)
-            lines.append(f"{name}={value_str},")
-        return "\n\t".join(lines) + "\n)"
+    @midi_number.setter
+    def midi_number(self, value):
+        self._midi_number = int(value)
+        self._encoder_midi_number = self._switch_midi_number = self._midi_number
 
     @property
     def detent(self):
@@ -150,7 +121,7 @@ class EncoderConfig(MutableMapping):
 
     @switch_midi_number.setter
     def switch_midi_number(self, value):
-        self._switch_midi_number = int(value)
+        raise AttributeError("Set `midi_number` property instead.")
 
     @property
     def switch_midi_type(self):
@@ -174,7 +145,7 @@ class EncoderConfig(MutableMapping):
 
     @encoder_midi_number.setter
     def encoder_midi_number(self, value):
-        self._encoder_midi_number = int(value)
+        raise AttributeError("Set `midi_number` property instead.")
 
     @property
     def encoder_midi_type(self):
@@ -231,3 +202,41 @@ class EncoderConfig(MutableMapping):
     @encoder_shift_midi_channel.setter
     def encoder_shift_midi_channel(self, value):
         self._encoder_shift_midi_channel = MidiChannel(value)
+
+    def __getitem__(self, key: int | str):
+        if isinstance(key, int):
+            name = self.ADDRESSES_TO_NAMES[key]
+        elif key in self.NAMES_TO_ADDRESSES:
+            name = key
+        else:
+            raise KeyError(f"Invalid config property: {key}")
+        return getattr(self, name)
+
+    def __setitem__(self, key: int | str, value: int):
+        if isinstance(key, int):
+            name = self.ADDRESSES_TO_NAMES[key]
+        elif key in self.NAMES_TO_ADDRESSES:
+            name = key
+        else:
+            raise KeyError(f"Invalid config property: {key}")
+        setattr(self, name, value)
+
+    def __delitem__(self, key):
+        raise NotImplementedError("Cannot delete config items")
+
+    def __iter__(self):
+        return iter(self.ADDRESSES_TO_NAMES)
+
+    def __len__(self):
+        return len(self.ADDRESSES_TO_NAMES)
+
+    def __str__(self) -> str:
+        lines = [f"{self.__class__.__name__}("]
+        for name in self.ADDRESSES_TO_NAMES.values():
+            value = getattr(self, name)
+            if hasattr(value, "name"):
+                value_str = f"{value.__class__.__name__}.{value.name}"
+            else:
+                value_str = repr(value)
+            lines.append(f"{name}={value_str},")
+        return "\n\t".join(lines) + "\n)"

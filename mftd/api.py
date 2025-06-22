@@ -14,11 +14,9 @@ from mftd.sysex import MftSysexApi
 
 
 class MftApi:
-    def __init__(
-        self, midi_in: MidiInput | None = None, midi_out: MidiOutput | None = None
-    ) -> None:
-        self.midi_input = midi_in if midi_in else create_midi_input()
-        self.midi_output = midi_out if midi_out else create_midi_output()
+    def __init__(self) -> None:
+        self.midi_input = create_midi_input()
+        self.midi_output = create_midi_output()
 
     def set_device_config(self, device_config: DeviceConfig) -> None:
         """Send the full device configuration to the MIDI device."""
@@ -29,15 +27,13 @@ class MftApi:
             config=device_config,
         )
 
-    def set_encoder_config(
-        self, encoder_index: int, encoder_config: EncoderConfig
-    ) -> None:
+    def set_encoder_config(self, encoder_config: EncoderConfig) -> None:
         """Send the full encoder configuration to the MIDI encoder."""
         if not self.midi_output:
             raise RuntimeError("MIDI output is not available.")
         MftSysexApi.set_encoder_config(
             midi_out=self.midi_output,
-            encoder_index=encoder_index,
+            encoder_index=encoder_config.midi_number,
             config=encoder_config,
         )
 

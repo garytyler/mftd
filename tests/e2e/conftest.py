@@ -43,7 +43,7 @@ def encoder_index():
 def encoder_config(midi_out, midi_in, encoder_index):
     encoder_config = MftSysexApi.get_encoder_config(midi_out, midi_in, encoder_index)
     yield encoder_config
-    MftSysexApi.set_encoder_config(midi_out, encoder_index, encoder_config)
+    MftSysexApi.set_encoder_config(midi_out, encoder_config)
     time.sleep(0.5)
 
 

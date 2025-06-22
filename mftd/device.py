@@ -55,44 +55,6 @@ class DeviceConfig(MutableMapping):
         self.right_button_2_function = right_button_2_function
         self.right_button_3_function = right_button_3_function
 
-    def __getitem__(self, key: int | str):
-        if isinstance(key, int):
-            name = self.ADDRESSES_TO_NAMES[key]
-        elif key in self.NAMES_TO_ADDRESSES:
-            name = key
-        else:
-            raise KeyError(f"Invalid config property: {key}")
-        return getattr(self, name)
-
-    def __setitem__(self, key: int | str, value: int):
-        if isinstance(key, int):
-            name = self.ADDRESSES_TO_NAMES[key]
-        elif key in self.NAMES_TO_ADDRESSES:
-            name = key
-        else:
-            raise KeyError(f"Invalid config property: {key}")
-        setattr(self, name, value)
-
-    def __delitem__(self, key):
-        raise NotImplementedError("Cannot delete config items")
-
-    def __iter__(self):
-        return iter(self.ADDRESSES_TO_NAMES)
-
-    def __len__(self):
-        return len(self.ADDRESSES_TO_NAMES)
-
-    def __str__(self) -> str:
-        lines = [f"{self.__class__.__name__}("]
-        for name in self.ADDRESSES_TO_NAMES.values():
-            value = getattr(self, name)
-            if hasattr(value, "name"):
-                value_str = f"{value.__class__.__name__}.{value.name}"
-            else:
-                value_str = repr(value)
-            lines.append(f"{name}={value_str},")
-        return "\n\t".join(lines) + "\n)"
-
     @property
     def system_midi_channel(self):
         return self._system_midi_channel
@@ -188,3 +150,41 @@ class DeviceConfig(MutableMapping):
     @right_button_3_function.setter
     def right_button_3_function(self, value):
         self._right_button_3_function = SideSwitchAction(value)
+
+    def __getitem__(self, key: int | str):
+        if isinstance(key, int):
+            name = self.ADDRESSES_TO_NAMES[key]
+        elif key in self.NAMES_TO_ADDRESSES:
+            name = key
+        else:
+            raise KeyError(f"Invalid config property: {key}")
+        return getattr(self, name)
+
+    def __setitem__(self, key: int | str, value: int):
+        if isinstance(key, int):
+            name = self.ADDRESSES_TO_NAMES[key]
+        elif key in self.NAMES_TO_ADDRESSES:
+            name = key
+        else:
+            raise KeyError(f"Invalid config property: {key}")
+        setattr(self, name, value)
+
+    def __delitem__(self, key):
+        raise NotImplementedError("Cannot delete config items")
+
+    def __iter__(self):
+        return iter(self.ADDRESSES_TO_NAMES)
+
+    def __len__(self):
+        return len(self.ADDRESSES_TO_NAMES)
+
+    def __str__(self) -> str:
+        lines = [f"{self.__class__.__name__}("]
+        for name in self.ADDRESSES_TO_NAMES.values():
+            value = getattr(self, name)
+            if hasattr(value, "name"):
+                value_str = f"{value.__class__.__name__}.{value.name}"
+            else:
+                value_str = repr(value)
+            lines.append(f"{name}={value_str},")
+        return "\n\t".join(lines) + "\n)"
