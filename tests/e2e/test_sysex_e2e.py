@@ -1,12 +1,10 @@
 import time
 from copy import deepcopy
 
-from mftd import constants
+from mftd import constants, MftSysexApi
 
 
-def test_get_set_global_config_e2e(
-    mft_sysex_api, device_config, midi_out, midi_in
-) -> None:
+def test_get_set_global_config_e2e(device_config, midi_out, midi_in) -> None:
     old_config = device_config
     old_value = old_config[31]
 
@@ -14,15 +12,16 @@ def test_get_set_global_config_e2e(
     new_config = deepcopy(old_config)
     new_config[31] = new_value
 
-    mft_sysex_api.set_device_config(midi_out, new_config)
+    MftSysexApi.set_device_config(midi_out, new_config)
     time.sleep(0.5)
 
-    result_config = mft_sysex_api.get_device_config(midi_out, midi_in)
+    result_config = MftSysexApi.get_device_config(midi_out, midi_in)
+    assert result_config is not None
     assert result_config[31] == new_value
 
 
 def test_get_set_encoder_config_e2e(
-    midi_out, midi_in, mft_sysex_api, encoder_config, encoder_index
+    midi_out, midi_in, encoder_config, encoder_index
 ) -> None:
     old_config = encoder_config
 
@@ -37,9 +36,9 @@ def test_get_set_encoder_config_e2e(
     new_config = deepcopy(old_config)
     new_config.active_color = new_color
 
-    mft_sysex_api.set_encoder_config(midi_out, encoder_index, new_config)
+    MftSysexApi.set_encoder_config(midi_out, encoder_index, new_config)
     time.sleep(0.5)
 
-    result_config = mft_sysex_api.get_encoder_config(midi_out, midi_in, encoder_index)
+    result_config = MftSysexApi.get_encoder_config(midi_out, midi_in, encoder_index)
     assert result_config.active_color == new_color  # Check for the expected new color
     assert result_config.active_color != old_config.active_color  # Ensure it changed

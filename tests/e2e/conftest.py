@@ -34,38 +34,6 @@ def midi_out():
 
 
 @pytest.fixture
-def mft_sysex_api(midi_in, midi_out):
-    """Setup MIDI ports and restore device state after testing."""
-    from mftd.sysex import MftSysexApi
-
-    in_port = None
-    out_port = None
-
-    # Find input port
-    for i in range(midi_in.get_port_count()):
-        if constants.DEVICE_NAME in midi_in.get_port_name(i):
-            in_port = i
-            break
-
-    # Find output port
-    for i in range(midi_out.get_port_count()):
-        if constants.DEVICE_NAME in midi_out.get_port_name(i):
-            out_port = i
-            break
-
-    if in_port is None or out_port is None:
-        pytest.skip("Midi Fighter Twister device not found")
-
-    # Store initial state
-    start_global_config = MftSysexApi.get_device_config(midi_out, midi_in)
-
-    yield MftSysexApi
-
-    # Restore state
-    MftSysexApi.set_device_config(midi_out, start_global_config)
-
-
-@pytest.fixture
 def encoder_index():
     """Fixture to provide a default encoder index."""
     yield 2
