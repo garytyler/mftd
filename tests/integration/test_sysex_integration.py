@@ -108,16 +108,3 @@ def test_get_encoder_config(rtmidi_stub):
 
     assert cfg.active_color == consts.ColorValue.BLUE
     assert cfg.detent_color == consts.DetentColorValues.RED
-
-
-def test_set_encoder_value(rtmidi_stub):
-    api = MftSysexApi
-    out = rtmidi_stub.MidiOut()
-
-    api.set_encoder_value(out, 2, 64)
-
-    assert out.messages[-1] == [
-        0xB0 + constants.MidiChannel.ROTARY_ENCODER,
-        2,
-        64,
-    ]

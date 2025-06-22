@@ -20,8 +20,6 @@ class MftSysexApi:
         config: DeviceConfig,
     ) -> None:
         """Send the full :class:`DeviceConfig` to the device."""
-        print("Sending device configuration to the MIDI Fighter Twister...")
-        print(config)
 
         def _int(value: int) -> int:
             if hasattr(value, "value"):
@@ -53,57 +51,6 @@ class MftSysexApi:
         if len(payload) > len(header):
             payload.append(0xF7)
             MftSysexApi._send_sysex(midi_out, payload)
-
-    @staticmethod
-    def get_device_config(
-        midi_out: MidiOutput,
-        midi_in: MidiInput,
-        timeout: float = 1.0,
-    ) -> DeviceConfig | None:
-        """Request and return the current :class:`DeviceConfig`."""
-        request = [
-            0xF0,
-            constants.MIDI_MFR_ID_0,
-            constants.MIDI_MFR_ID_1,
-            constants.MIDI_MFR_ID_2,
-            constants.SysexCommands.PULL_CONF,
-            0x00,
-            0xF7,
-        ]
-        MftSysexApi._send_sysex(midi_out, request)
-        response = MftSysexApi._receive_sysex(
-            midi_in, constants.SysexCommands.PULL_CONF, timeout
-        )
-        if not response:
-            raise RuntimeError("Failed to receive device configuration")
-        end = time.time() + timeout
-        config = DeviceConfig()
-        received = set()
-        unseen = set(config.keys())
-        for i in range(6, len(response) - 1, 2):
-            addr = response[i]
-            val = response[i + 1]
-            config[addr] = val
-            unseen.remove(addr)
-            received.add(addr)
-        if unseen:
-            unseen_names = [config.ADDRESSES_TO_NAMES[addr] for addr in unseen]
-            raise RuntimeError(f"Missing config values: {unseen_names}")
-
-        while time.time() < end and len(received) < len(config.keys()):
-            remaining = end - time.time()
-            response = MftSysexApi._receive_sysex(
-                midi_in, constants.SysexCommands.PULL_CONF, remaining
-            )
-            if not response:
-                break
-            for i in range(6, len(response) - 1, 2):
-                addr = response[i]
-                val = response[i + 1]
-                config[addr] = val
-                received.add(addr)
-
-        return config
 
     @staticmethod
     def set_encoder_config(
@@ -165,33 +112,56 @@ class MftSysexApi:
 
                 MftSysexApi._send_sysex(midi_out, payload)
 
-        # bytes_remaining = len(params)
-        # total_parts = (
-        #     bytes_remaining + constants.PART_SIZE_BYTES - 1
-        # ) // constants.PART_SIZE_BYTES
-        # sysex_tag = encoder_index + 1
-        # part = 1
-        # while params:
-        #     size = min(len(params), constants.PART_SIZE_BYTES)
-        #     payload = (
-        #         [
-        #             0xF0,
-        #             constants.MIDI_MFR_ID_0,
-        #             constants.MIDI_MFR_ID_1,
-        #             constants.MIDI_MFR_ID_2,
-        #             constants.SysexCommands.BULK_XFER,
-        #             0x00,
-        #             sysex_tag,
-        #             part,
-        #             total_parts,
-        #             size,
-        #         ]
-        #         + params[:size]
-        #         + [0xF7]
-        #     )
-        #     params = params[size:]
-        #     MftSysexApi._send_sysex(midi_out, payload)
-        #     part += 1
+    @staticmethod
+    def get_device_config(
+        midi_out: MidiOutput,
+        midi_in: MidiInput,
+        timeout: float = 1.0,
+    ) -> DeviceConfig | None:
+        """Request and return the current :class:`DeviceConfig`."""
+        request = [
+            0xF0,
+            constants.MIDI_MFR_ID_0,
+            constants.MIDI_MFR_ID_1,
+            constants.MIDI_MFR_ID_2,
+            constants.SysexCommands.PULL_CONF,
+            0x00,
+            0xF7,
+        ]
+        MftSysexApi._send_sysex(midi_out, request)
+        response = MftSysexApi._receive_sysex(
+            midi_in, constants.SysexCommands.PULL_CONF, timeout
+        )
+        if not response:
+            raise RuntimeError("Failed to receive device configuration")
+        end = time.time() + timeout
+        config = DeviceConfig()
+        received = set()
+        unseen = set(config.keys())
+        for i in range(6, len(response) - 1, 2):
+            addr = response[i]
+            val = response[i + 1]
+            config[addr] = val
+            unseen.remove(addr)
+            received.add(addr)
+        if unseen:
+            unseen_names = [config.ADDRESSES_TO_NAMES[addr] for addr in unseen]
+            raise RuntimeError(f"Missing config values: {unseen_names}")
+
+        while time.time() < end and len(received) < len(config.keys()):
+            remaining = end - time.time()
+            response = MftSysexApi._receive_sysex(
+                midi_in, constants.SysexCommands.PULL_CONF, remaining
+            )
+            if not response:
+                break
+            for i in range(6, len(response) - 1, 2):
+                addr = response[i]
+                val = response[i + 1]
+                config[addr] = val
+                received.add(addr)
+
+        return config
 
     @staticmethod
     def get_encoder_config(
@@ -241,38 +211,16 @@ class MftSysexApi:
                 setattr(cfg, name, responses[address])
         return cfg
 
-    @staticmethod
-    def set_encoder_value(
-        midi_out: MidiOutput,
-        encoder_index: int,
-        value: int,
-        channel: int = constants.MidiChannel.ROTARY_ENCODER,
-    ) -> None:
-        """Send a control change with the specified value."""
-        message = [0xB0 + channel, encoder_index, value]
-        MftSysexApi._send_midi(midi_out, message)
-
-    # Backwards compatibility -------------------------------------------------
-    send_encoder_value = set_encoder_value
-
     # Private helper functions -------------------------------------------------
     @staticmethod
     def _send_sysex(midi_out: MidiOutput, data: Iterable[int]) -> None:
         try:
-            # Ensure all data is converted to integers
             int_data = []
-            print("Before prepping SysEx message items:", data)
             for item in data:
-                print("Processing item:", item)
                 if hasattr(item, "value"):
-                    print("Item has value attribute:", item)
-                    # Handle enum types
                     int_data.append(item.value)
-
                 else:
-                    # Handle regular ints and booleans
                     int_data.append(int(item))
-            print("Sending SysEx message:", int_data)
             midi_out.send_message(int_data)
         except Exception as exc:
             print(f"Error sending SysEx message: {exc}")

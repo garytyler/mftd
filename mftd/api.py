@@ -3,7 +3,13 @@ from __future__ import annotations
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
 
-from mftd.midi import create_midi_input, create_midi_output, MidiInput, MidiOutput
+from mftd.midi import (
+    create_midi_input,
+    create_midi_output,
+    MidiInput,
+    MidiOutput,
+    is_td_available,
+)
 from mftd.sysex import MftSysexApi
 
 
@@ -11,7 +17,6 @@ class MftApi:
     def __init__(
         self, midi_in: MidiInput | None = None, midi_out: MidiOutput | None = None
     ) -> None:
-        print("MftApi initialized")
         self.midi_input = midi_in if midi_in else create_midi_input()
         self.midi_output = midi_out if midi_out else create_midi_output()
 
@@ -22,17 +27,6 @@ class MftApi:
         MftSysexApi.set_device_config(
             midi_out=self.midi_output,
             config=device_config,
-        )
-
-    def get_device_config(self) -> DeviceConfig | None:
-        """Request and return the current device configuration."""
-        if not self.midi_output:
-            raise RuntimeError("MIDI output is not available.")
-        if not self.midi_input:
-            raise RuntimeError("MIDI input is not available.")
-        return MftSysexApi.get_device_config(
-            midi_out=self.midi_output,
-            midi_in=self.midi_input,
         )
 
     def set_encoder_config(
@@ -47,12 +41,33 @@ class MftApi:
             config=encoder_config,
         )
 
+    def get_device_config(self) -> DeviceConfig | None:
+        """Request and return the current device configuration."""
+        if not self.midi_output or not self.midi_input:
+            if is_td_available():
+                raise RuntimeError(
+                    "get_device_config() is not supported in TouchDesigner."
+                )
+            elif not self.midi_output:
+                raise RuntimeError("MIDI output is not available.")
+            elif not self.midi_input:
+                raise RuntimeError("MIDI input is not available.")
+        return MftSysexApi.get_device_config(
+            midi_out=self.midi_output,
+            midi_in=self.midi_input,
+        )
+
     def get_encoder_config(self, encoder_index) -> EncoderConfig:
         """Request and return the current encoder configuration."""
-        if not self.midi_output:
-            raise RuntimeError("MIDI output is not available.")
-        if not self.midi_input:
-            raise RuntimeError("MIDI input is not available.")
+        if not self.midi_output or not self.midi_input:
+            if is_td_available():
+                raise RuntimeError(
+                    "get_encoder_config() is not supported in TouchDesigner."
+                )
+            elif not self.midi_output:
+                raise RuntimeError("MIDI output is not available.")
+            elif not self.midi_input:
+                raise RuntimeError("MIDI input is not available.")
         return MftSysexApi.get_encoder_config(
             midi_out=self.midi_output,
             midi_in=self.midi_input,

@@ -1,86 +1,10 @@
 from __future__ import annotations
 
 from typing import cast
-import time
+
 
 from mftd import constants
 from mftd.protocol import MidiInput, MidiOutput
-
-
-class TdMidiInput(MidiInput):
-    """MidiInput wrapper for TouchDesigner."""
-
-    midi_event_dat_name = "mftMidiEvent"
-    midi_event_dat_type = "midieventDAT"
-    midi_in_chop_name = "mftMidiSystemIn"
-    midi_in_chop_type = "midiinCHOP"
-
-    def __init__(self, chop=None) -> None:
-        import td  # type: ignore
-
-        self.parent_op = op("/project1")
-
-        # Ensure there is an active MIDI In CHOP so events get logged
-        self.midi_in_chop = self.parent_op.op(self.midi_in_chop_name)
-        if not self.midi_in_chop:
-            self.midi_in_chop = self.parent_op.create(
-                self.midi_in_chop_type, self.midi_in_chop_name
-            )
-        try:
-            self.midi_in_chop.par.active = True
-        except Exception as exc:
-            print(f"Error enabling MIDI In CHOP: {exc}")
-
-        self.midi_event_dat = self.parent_op.op(self.midi_event_dat_name)
-        if not self.midi_event_dat:
-            self.midi_event_dat = self.parent_op.create(
-                self.midi_event_dat_type, self.midi_event_dat_name
-            )
-        try:
-            self.midi_event_dat.par.active = True
-        except Exception as exc:
-            print(f"Error enabling MIDI Event DAT: {exc}")
-        self.row = 0
-
-    def get_port_count(self) -> int:  # pragma: no cover - TD only
-        return 1
-
-    def get_port_name(self, port: int) -> str:  # pragma: no cover - TD only
-        try:
-            return self.midi_event_dat.name
-        except Exception as exc:
-            print(f"Error accessing MIDI event DAT name: {exc}")
-
-    def open_port(self, port: int) -> None:  # pragma: no cover - TD only
-        self.row = 0
-
-    def close_port(self) -> None:  # pragma: no cover - TD only
-        pass
-
-    def ignore_types(
-        self, sysex: bool, timing: bool, active_sense: bool
-    ) -> None:  # pragma: no cover - TD only
-        pass
-
-    def get_message(self):  # pragma: no cover - TD only
-        if not self.midi_event_dat:
-            return None
-        if self.row >= self.midi_event_dat.numRows:
-            return None
-        try:
-            cell = self.midi_event_dat[self.row, "bytes"]
-        except Exception as exc:
-            print(f"Error accessing event_dat cell: {exc}")
-            return None
-        data = []
-        if cell and getattr(cell, "val", None):
-            for item in str(cell.val).split():
-                try:
-                    data.append(int(item, 0))
-                except ValueError:
-                    pass
-        self.row += 1
-        return data, time.time()
 
 
 class TdMidiOutput(MidiOutput):
@@ -146,8 +70,7 @@ def create_midi_input() -> MidiInput | None:
 
         return cast(MidiInput, midi_in)
     elif is_td_available():
-        print("Using TouchDesigner MIDI input")
-        return TdMidiInput()
+        return None
     return None
 
 
