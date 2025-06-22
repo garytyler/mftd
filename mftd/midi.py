@@ -12,16 +12,34 @@ class TdMidiInput(MidiInput):
 
     midi_event_dat_name = "mftMidiEvent"
     midi_event_dat_type = "midieventDAT"
+    midi_in_chop_name = "mftMidiSystemIn"
+    midi_in_chop_type = "midiinCHOP"
 
     def __init__(self, chop=None) -> None:
         import td  # type: ignore
 
         self.parent_op = op("/project1")
+
+        # Ensure there is an active MIDI In CHOP so events get logged
+        self.midi_in_chop = self.parent_op.op(self.midi_in_chop_name)
+        if not self.midi_in_chop:
+            self.midi_in_chop = self.parent_op.create(
+                self.midi_in_chop_type, self.midi_in_chop_name
+            )
+        try:
+            self.midi_in_chop.par.active = True
+        except Exception as exc:
+            print(f"Error enabling MIDI In CHOP: {exc}")
+
         self.midi_event_dat = self.parent_op.op(self.midi_event_dat_name)
         if not self.midi_event_dat:
             self.midi_event_dat = self.parent_op.create(
                 self.midi_event_dat_type, self.midi_event_dat_name
             )
+        try:
+            self.midi_event_dat.par.active = True
+        except Exception as exc:
+            print(f"Error enabling MIDI Event DAT: {exc}")
         self.row = 0
 
     def get_port_count(self) -> int:  # pragma: no cover - TD only
