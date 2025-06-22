@@ -1,0 +1,72 @@
+from __future__ import annotations
+
+from mftd import MidiInput, MidiOutput, DeviceConfig, MftSysexApi, EncoderConfig
+from mftd.midi import create_midi_input, create_midi_output
+
+
+class MftApi:
+    def __init__(
+        self, midi_in: MidiInput | None = None, midi_out: MidiOutput | None = None
+    ) -> None:
+        print("MftApi initialized")
+        self.midi_input = midi_in if midi_in else create_midi_input()
+        self.midi_output = midi_out if midi_out else create_midi_output()
+
+    def set_device_config(self, device_config: DeviceConfig) -> None:
+        """Send the full device configuration to the MIDI device."""
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
+        MftSysexApi.set_device_config(
+            midi_out=self.midi_output,
+            config=device_config,
+        )
+
+    def get_device_config(self) -> DeviceConfig | None:
+        """Request and return the current device configuration."""
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
+        if not self.midi_input:
+            raise RuntimeError("MIDI input is not available.")
+        return MftSysexApi.get_device_config(
+            midi_out=self.midi_output,
+            midi_in=self.midi_input,
+        )
+
+    def set_encoder_config(
+        self, encoder_index: int, encoder_config: EncoderConfig
+    ) -> None:
+        """Send the full encoder configuration to the MIDI encoder."""
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
+        MftSysexApi.set_encoder_config(
+            midi_out=self.midi_output,
+            encoder_index=encoder_index,
+            config=encoder_config,
+        )
+
+    def get_encoder_config(self, encoder_index) -> EncoderConfig:
+        """Request and return the current encoder configuration."""
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
+        if not self.midi_input:
+            raise RuntimeError("MIDI input is not available.")
+        return MftSysexApi.get_encoder_config(
+            midi_out=self.midi_output,
+            midi_in=self.midi_input,
+            encoder_index=encoder_index,
+        )
+
+    def close(self):
+        if hasattr(self, "midi_input"):
+            self.midi_input.close_port()
+        if hasattr(self, "midi_output"):
+            self.midi_output.close_port()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
+        self.close()  # Fallback cleanup
