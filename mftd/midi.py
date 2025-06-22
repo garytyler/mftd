@@ -57,7 +57,7 @@ def create_midi_input() -> MidiInput | None:
     """Create a MidiInput instance that auto-connects to Midi Fighter Twister."""
     print("Creating MIDI input...")
     if is_rtmidi_available():
-        import rtmidi
+        import rtmidi  # type: ignore
 
         midi_in = rtmidi.MidiIn()
 
@@ -77,7 +77,7 @@ def create_midi_input() -> MidiInput | None:
 def create_midi_output() -> MidiOutput | None:
     """Create a MidiOutput instance that auto-connects to Midi Fighter Twister."""
     if is_rtmidi_available():
-        import rtmidi
+        import rtmidi  # type: ignore
 
         midi_out = rtmidi.MidiOut()
 
