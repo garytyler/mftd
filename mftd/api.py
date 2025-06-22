@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from mftd import MidiInput, MidiOutput, DeviceConfig, MftSysexApi, EncoderConfig
-from mftd.midi import create_midi_input, create_midi_output
+from mftd.device import DeviceConfig
+from mftd.encoder import EncoderConfig
+
+from mftd.midi import create_midi_input, create_midi_output, MidiInput, MidiOutput
+from mftd.sysex import MftSysexApi
 
 
 class MftApi:

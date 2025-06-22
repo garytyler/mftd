@@ -10,20 +10,28 @@ from mftd.protocol import MidiInput, MidiOutput
 class TdMidiInput(MidiInput):
     """MidiInput wrapper for TouchDesigner."""
 
-    def __init__(self, chop=None, event_dat=None) -> None:
+    midi_event_dat_name = "mftMidiEvent"
+    midi_event_dat_type = "midieventDAT"
+
+    def __init__(self, chop=None) -> None:
         import td  # type: ignore
 
-        self.chop = chop if chop else td.midiinCHOP
-        self.event_dat = event_dat if event_dat else getattr(td, "midieventDAT", None)
+        self.parent_op = op("/project1")
+        self.midi_event_dat = self.parent_op.op(self.midi_event_dat_name)
+        if not self.midi_event_dat:
+            self.midi_event_dat = self.parent_op.create(
+                self.midi_event_dat_type, self.midi_event_dat_name
+            )
         self.row = 0
 
     def get_port_count(self) -> int:  # pragma: no cover - TD only
         return 1
 
     def get_port_name(self, port: int) -> str:  # pragma: no cover - TD only
-        if hasattr(self.chop, "name"):
-            return self.chop.name
-        return "midiinCHOP"
+        try:
+            return self.midi_event_dat.name
+        except Exception as exc:
+            print(f"Error accessing MIDI event DAT name: {exc}")
 
     def open_port(self, port: int) -> None:  # pragma: no cover - TD only
         self.row = 0
@@ -37,12 +45,12 @@ class TdMidiInput(MidiInput):
         pass
 
     def get_message(self):  # pragma: no cover - TD only
-        if not self.event_dat:
+        if not self.midi_event_dat:
             return None
-        if self.row >= self.event_dat.numRows:
+        if self.row >= self.midi_event_dat.numRows:
             return None
         try:
-            cell = self.event_dat[self.row, "bytes"]
+            cell = self.midi_event_dat[self.row, "bytes"]
         except Exception as exc:
             print(f"Error accessing event_dat cell: {exc}")
             return None
