@@ -23,9 +23,6 @@ class TdMidiOutput(MidiOutput):
                 self.midi_out_chop_type, self.midi_out_chop_name
             )
 
-        self.chop = self.parent_op.op(self.midi_out_chop_name)
-        print(self.chop)
-
     def get_port_count(self) -> int:  # pragma: no cover - TD only
         return 1
 
