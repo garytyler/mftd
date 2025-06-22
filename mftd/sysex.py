@@ -20,6 +20,8 @@ class MftSysexApi:
         config: DeviceConfig,
     ) -> None:
         """Send the full :class:`DeviceConfig` to the device."""
+        print("Sending device configuration to the MIDI Fighter Twister...")
+        print(config)
 
         def _int(value: int) -> int:
             if hasattr(value, "value"):
@@ -259,13 +261,18 @@ class MftSysexApi:
         try:
             # Ensure all data is converted to integers
             int_data = []
+            print("Before prepping SysEx message items:", data)
             for item in data:
+                print("Processing item:", item)
                 if hasattr(item, "value"):
+                    print("Item has value attribute:", item)
                     # Handle enum types
                     int_data.append(item.value)
+
                 else:
                     # Handle regular ints and booleans
                     int_data.append(int(item))
+            print("Sending SysEx message:", int_data)
             midi_out.send_message(int_data)
         except Exception as exc:
             print(f"Error sending SysEx message: {exc}")

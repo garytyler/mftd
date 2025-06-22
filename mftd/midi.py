@@ -31,7 +31,9 @@ class TdMidiInput(MidiInput):
     def close_port(self) -> None:  # pragma: no cover - TD only
         pass
 
-    def ignore_types(self, sysex: bool, timing: bool, active_sense: bool) -> None:  # pragma: no cover - TD only
+    def ignore_types(
+        self, sysex: bool, timing: bool, active_sense: bool
+    ) -> None:  # pragma: no cover - TD only
         pass
 
     def get_message(self):  # pragma: no cover - TD only
@@ -41,7 +43,8 @@ class TdMidiInput(MidiInput):
             return None
         try:
             cell = self.event_dat[self.row, "bytes"]
-        except Exception:
+        except Exception as exc:
+            print(f"Error accessing event_dat cell: {exc}")
             return None
         data = []
         if cell and getattr(cell, "val", None):
@@ -51,24 +54,34 @@ class TdMidiInput(MidiInput):
                 except ValueError:
                     pass
         self.row += 1
-        return (data, time.time())
+        return data, time.time()
 
 
 class TdMidiOutput(MidiOutput):
     """MidiOutput wrapper for TouchDesigner."""
 
+    midi_out_chop_name = "mftMidiSystemOut"
+    midi_out_chop_type = "midioutCHOP"
+
     def __init__(self, chop=None) -> None:
         import td  # type: ignore
 
-        self.chop = chop if chop else td.midioutCHOP
+        self.parent_op = op("/project1")
+        self.midi_out_chop = self.parent_op.op(self.midi_out_chop_name)
+        if not self.midi_out_chop:
+            self.midi_out_chop = self.parent_op.create(
+                self.midi_out_chop_type, self.midi_out_chop_name
+            )
+
+        self.chop = self.parent_op.op(self.midi_out_chop_name)
+        print(self.chop)
 
     def get_port_count(self) -> int:  # pragma: no cover - TD only
         return 1
 
     def get_port_name(self, port: int) -> str:  # pragma: no cover - TD only
-        if hasattr(self.chop, "name"):
-            return self.chop.name
-        return "midioutCHOP"
+        # if hasattr(self.chop, "name"):
+        return self.chop.name
 
     def open_port(self, port: int) -> None:  # pragma: no cover - TD only
         pass
@@ -76,21 +89,25 @@ class TdMidiOutput(MidiOutput):
     def close_port(self) -> None:  # pragma: no cover - TD only
         pass
 
-    def ignore_types(self, sysex: bool, timing: bool, active_sense: bool) -> None:  # pragma: no cover - TD only
+    def ignore_types(
+        self, sysex: bool, timing: bool, active_sense: bool
+    ) -> None:  # pragma: no cover - TD only
         pass
 
     def send_message(self, message):  # pragma: no cover - TD only
-        if hasattr(self.chop, "send"):
-            try:
-                self.chop.send(*list(message))
-            except Exception:
-                pass
+        try:
+            self.chop.send(bytes(message))
+        except Exception as exc:
+            print("Failed to send message:", message)
+            print(exc)
+            pass
 
 
 class MftApi:
     def __init__(
         self, midi_in: MidiInput | None = None, midi_out: MidiOutput | None = None
     ) -> None:
+        print("MftApi initialized")
         self.midi_input = midi_in if midi_in else create_midi_input()
         self.midi_output = midi_out if midi_out else create_midi_output()
 
@@ -103,13 +120,13 @@ class MftApi:
             config=device_config,
         )
 
-    def get_device_config(self) -> DeviceConfig:
+    def get_device_config(self) -> DeviceConfig | None:
         """Request and return the current device configuration."""
         if not self.midi_output:
             raise RuntimeError("MIDI output is not available.")
         if not self.midi_input:
             raise RuntimeError("MIDI input is not available.")
-        return MftSysexApi.get_device_config(
+        MftSysexApi.get_device_config(
             midi_out=self.midi_output,
             midi_in=self.midi_input,
         )
@@ -156,6 +173,7 @@ class MftApi:
 
 def create_midi_input() -> MidiInput | None:
     """Create a MidiInput instance that auto-connects to Midi Fighter Twister."""
+    print("Creating MIDI input...")
     if is_rtmidi_available():
         import rtmidi
 
@@ -170,6 +188,7 @@ def create_midi_input() -> MidiInput | None:
 
         return cast(MidiInput, midi_in)
     elif is_td_available():
+        print("Using TouchDesigner MIDI input")
         return TdMidiInput()
     return None
 

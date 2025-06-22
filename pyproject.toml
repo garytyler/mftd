@@ -5,10 +5,7 @@ description = "Python Midi Fighter Twister configuration for Touch Designer"
 readme = "README.md"
 requires-python = "==3.11.1"
 authors = [ { name = "Gary Tyler", email = "mail@garytyler.com" } ]
-dependencies = []
-
-[project.optional-dependencies]
-dev = [
+dependencies = [
     "python-rtmidi>=1.5.8",
     "pytest>=6.2.5",
     "pytest-mock>=3.6.1",
@@ -18,11 +15,6 @@ dev = [
     "isort[colors]>=5.9.3",
     "flake8>=7.0.0",
 ]
-
-[project.scripts]
-demo_main = "mftd.main:run"
-version = "mftd.main:version"
-inline = "mftd.inline:main"
 
 [tool.mypy]
 plugins = []
