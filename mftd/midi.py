@@ -26,24 +26,6 @@ class TdMidiOutput(MidiOutput):
         self.chop = self.parent_op.op(self.midi_out_chop_name)
         print(self.chop)
 
-    def get_port_count(self) -> int:  # pragma: no cover - TD only
-        return 1
-
-    def get_port_name(self, port: int) -> str:  # pragma: no cover - TD only
-        # if hasattr(self.chop, "name"):
-        return self.chop.name
-
-    def open_port(self, port: int) -> None:  # pragma: no cover - TD only
-        pass
-
-    def close_port(self) -> None:  # pragma: no cover - TD only
-        pass
-
-    def ignore_types(
-        self, sysex: bool, timing: bool, active_sense: bool
-    ) -> None:  # pragma: no cover - TD only
-        pass
-
     def send_message(self, message):  # pragma: no cover - TD only
         try:
             self.chop.send(bytes(message))
