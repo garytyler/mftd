@@ -99,7 +99,7 @@ def test_get_encoder_config(rtmidi_stub):
         19,
         consts.ColorValue.BLUE,
         21,
-        consts.DetentColorValues.RED,
+        consts.DetentColorValue.RED,
         0xF7,
     ]
     inp.messages.append((resp, None))
@@ -107,4 +107,4 @@ def test_get_encoder_config(rtmidi_stub):
     cfg = api.get_encoder_config(out, inp, 0)
 
     assert cfg.active_color == consts.ColorValue.BLUE
-    assert cfg.detent_color == consts.DetentColorValues.RED
+    assert cfg.detent_color == consts.DetentColorValue.RED

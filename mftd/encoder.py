@@ -5,7 +5,7 @@ from mftd.constants import (
     SysexBool,
     EncoderIndicatorDisplayType,
     ColorValue,
-    DetentColorValues,
+    DetentColorValue,
     EncoderMidiMessageType,
     EncoderMovementType,
     EncoderSwitchActionType,
@@ -41,7 +41,8 @@ class EncoderConfig(MutableMapping):
 
     def __init__(
         self,
-        detent: SysexBool = SysexBool.FALSE,
+        *,
+        detent: bool | SysexBool = SysexBool.FALSE,
         movement_type: EncoderMovementType = EncoderMovementType.DIRECT_HIGH_RESOLUTION,
         switch_action_type: EncoderSwitchActionType = EncoderSwitchActionType.CC_HOLD,
         switch_midi_channel: MidiChannel = MidiChannel.SWITCH_AND_COLOR,
@@ -52,28 +53,26 @@ class EncoderConfig(MutableMapping):
         encoder_midi_type: EncoderMidiMessageType = EncoderMidiMessageType.SEND_CC,
         active_color: ColorValue = ColorValue.DEFAULT_ACTIVE,
         inactive_color: ColorValue = ColorValue.DEFAULT_INACTIVE,
-        detent_color: DetentColorValues = DetentColorValues.PINK,
+        detent_color: DetentColorValue = DetentColorValue.PINK,
         indicator_display_type: EncoderIndicatorDisplayType = EncoderIndicatorDisplayType.BLENDED_BAR,
-        is_super_knob: SysexBool = SysexBool.FALSE,
+        is_super_knob: bool | SysexBool = SysexBool.FALSE,
         encoder_shift_midi_channel: MidiChannel = MidiChannel.SHIFT,
     ):
-        self._detent: SysexBool = detent
-        self._movement_type: EncoderMovementType = movement_type
-        self._switch_action_type: EncoderSwitchActionType = switch_action_type
-        self._switch_midi_channel: MidiChannel = switch_midi_channel
-        self._switch_midi_number: int = switch_midi_number
-        self._switch_midi_type: int = switch_midi_type
-        self._encoder_midi_channel: int = encoder_midi_channel
-        self._encoder_midi_number: int = encoder_midi_number
-        self._encoder_midi_type: EncoderMidiMessageType = encoder_midi_type
-        self._active_color: ColorValue = active_color
-        self._inactive_color: ColorValue = inactive_color
-        self._detent_color: DetentColorValues = detent_color
-        self._indicator_display_type: EncoderIndicatorDisplayType = (
-            indicator_display_type
-        )
-        self._is_super_knob: SysexBool = is_super_knob
-        self._encoder_shift_midi_channel: int = encoder_shift_midi_channel
+        self.detent = detent
+        self.movement_type = movement_type
+        self.switch_action_type = switch_action_type
+        self.switch_midi_channel = switch_midi_channel
+        self.switch_midi_number = switch_midi_number
+        self.switch_midi_type = switch_midi_type
+        self.encoder_midi_channel = encoder_midi_channel
+        self.encoder_midi_number = encoder_midi_number
+        self.encoder_midi_type = encoder_midi_type
+        self.active_color = active_color
+        self.inactive_color = inactive_color
+        self.detent_color = detent_color
+        self.indicator_display_type = indicator_display_type
+        self.is_super_knob = is_super_knob
+        self.encoder_shift_midi_channel = encoder_shift_midi_channel
 
     def __getitem__(self, key: int | str):
         if isinstance(key, int):
@@ -207,7 +206,7 @@ class EncoderConfig(MutableMapping):
 
     @detent_color.setter
     def detent_color(self, value):
-        self._detent_color = DetentColorValues(value)
+        self._detent_color = DetentColorValue(value)
 
     @property
     def indicator_display_type(self):

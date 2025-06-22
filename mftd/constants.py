@@ -105,7 +105,7 @@ class ColorValue(IntEnum):
     USER = GREEN  # Default color for user-defined color
 
 
-class DetentColorValues(IntEnum):
+class DetentColorValue(IntEnum):
     """
     MIDI values for setting the detent color on the encoders.
     """

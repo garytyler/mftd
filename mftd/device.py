@@ -23,22 +23,6 @@ class DeviceConfig(MutableMapping):
         9: "super_knob_end",
         31: "rgb_led_brightness",
         32: "indicator_global_brightness",
-        ## Undocumented fields
-        # 10: "default_detent",
-        # 11: "sensitivity",
-        # 12: "switch_action_type",
-        # 13: "switch_midi_channel",
-        # 14: "switch_midi_number",
-        # 15: "switch_midi_type",
-        # 16: "encoder_midi_channel",
-        # 17: "encoder_midi_number",
-        # 18: "encoder_midi_type",
-        # 19: "active_color",
-        # 20: "inactive_color",
-        # 21: "detent_color",
-        # 22: "indicator_display_type",
-        # 23: "is_super_knob",
-        # 24: "encoder_shift_midi_channel",
     }
     NAMES_TO_ADDRESSES = {name: addr for (addr, name) in ADDRESSES_TO_NAMES.items()}
 
@@ -58,34 +42,18 @@ class DeviceConfig(MutableMapping):
         right_button_2_function: SideSwitchAction = SideSwitchAction.NEXT_BANK,
         right_button_3_function: SideSwitchAction = SideSwitchAction.CC_HOLD,
     ):
-        self.system_midi_channel: MidiChannel = system_midi_channel
-        self.super_knob_start: int = super_knob_start
-        self.super_knob_end: int = super_knob_end
-        self.rgb_led_brightness: int = rgb_led_brightness
-        self.indicator_global_brightness: int = indicator_global_brightness
-        self.bank_side_buttons: SysexBool = bank_side_buttons
-        self.left_button_1_function: SideSwitchAction = left_button_1_function
-        self.left_button_2_function: SideSwitchAction = left_button_2_function
-        self.left_button_3_function: SideSwitchAction = left_button_3_function
-        self.right_button_1_function: SideSwitchAction = right_button_1_function
-        self.right_button_2_function: SideSwitchAction = right_button_2_function
-        self.right_button_3_function: SideSwitchAction = right_button_3_function
-        ## Undocumented fields
-        # default_detent: int = 0
-        # sensitivity: int = 0
-        # switch_action_type: EncoderSwitchActionType = EncoderSwitchActionType.CC_HOLD
-        # switch_midi_channel: int = 2
-        # switch_midi_number: int = 0
-        # switch_midi_type: int = 0
-        # encoder_midi_channel: int = 1
-        # encoder_midi_number: int = 0
-        # encoder_midi_type: int = EncoderMidiMessageType.SEND_CC
-        # active_color: int = ColorValues.ACTIVE
-        # inactive_color: int = ColorValues.BLUE
-        # detent_color: int = 63
-        # indicator_display_type: int = EncoderIndicatorDisplayType.BLENDED_BAR
-        # is_super_knob: int = 0
-        # encoder_shift_midi_channel: int = 0
+        self.system_midi_channel = system_midi_channel
+        self.super_knob_start = super_knob_start
+        self.super_knob_end = super_knob_end
+        self.rgb_led_brightness = rgb_led_brightness
+        self.indicator_global_brightness = indicator_global_brightness
+        self.bank_side_buttons = bank_side_buttons
+        self.left_button_1_function = left_button_1_function
+        self.left_button_2_function = left_button_2_function
+        self.left_button_3_function = left_button_3_function
+        self.right_button_1_function = right_button_1_function
+        self.right_button_2_function = right_button_2_function
+        self.right_button_3_function = right_button_3_function
 
     def __getitem__(self, key: int | str):
         if isinstance(key, int):
