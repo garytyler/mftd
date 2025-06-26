@@ -202,7 +202,7 @@ class MftSysexApi:
             raise RuntimeError(
                 f"Failed to receive encoder config for encoder {encoder_index}"
             )
-        cfg = EncoderConfig()
+        cfg = EncoderConfig(encoder_index)
         for name, address in cfg.NAMES_TO_ADDRESSES.items():
             if address in responses:
                 setattr(cfg, name, responses[address])
