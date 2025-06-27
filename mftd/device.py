@@ -25,6 +25,8 @@ class DeviceConfig(MutableMapping):
         32: "indicator_global_brightness",
     }
     NAMES_TO_ADDRESSES = {name: addr for (addr, name) in ADDRESSES_TO_NAMES.items()}
+    ADDRESSES = ADDRESSES_TO_NAMES.keys()
+    NAMES = ADDRESSES_TO_NAMES.values()
 
     def __init__(
         self,
@@ -178,13 +180,12 @@ class DeviceConfig(MutableMapping):
     def __len__(self):
         return len(self.ADDRESSES_TO_NAMES)
 
+    def __repr__(self):
+        return str(dict(self))
+
     def __str__(self) -> str:
         lines = [f"{self.__class__.__name__}("]
-        for name in self.ADDRESSES_TO_NAMES.values():
-            value = getattr(self, name)
-            if hasattr(value, "name"):
-                value_str = f"{value.__class__.__name__}.{value.name}"
-            else:
-                value_str = repr(value)
-            lines.append(f"{name}={value_str},")
+        for addr, value in dict(self).items():
+            name = self.ADDRESSES_TO_NAMES[addr]
+            lines.append(f"{name}={repr(value)},")
         return "\n\t".join(lines) + "\n)"
