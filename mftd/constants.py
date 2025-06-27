@@ -17,13 +17,13 @@ class MidiChannel(IntEnum):
     Refer to the "Encoder Settings" section in the PDF.
     """
 
-    ROTARY_ENCODER = 1  # For rotary encoder messages (knob twists)
-    SWITCH_AND_COLOR = 2  # For encoder switch and color messages
-    ANIMATIONS_AND_BRIGHTNESS = 3  # For encoder animations and brightness messages
-    SYSTEM = 4  # For system messages (bank changes, side button actions)
-    SHIFT = 5  # For shift encoder messages
-    SWITCH_ANIMATION = 6  # For switch animation messages
-    SEQUENCER = 8  # For sequencer messages
+    ROTARY_ENCODER = 0  # For rotary encoder messages (knob twists)
+    SWITCH_AND_COLOR = 1  # For encoder switch and color messages
+    ANIMATIONS_AND_BRIGHTNESS = 2  # For encoder animations and brightness messages
+    SYSTEM = 3  # For system messages (bank changes, side button actions)
+    SHIFT = 4  # For shift encoder messages
+    SWITCH_ANIMATION = 5  # For switch animation messages
+    SEQUENCER = 7  # For sequencer messages
 
 
 class EncoderControl(IntEnum):
