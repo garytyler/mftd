@@ -19,22 +19,6 @@ class FromSysexMixin:
         for any subclass by finding the first non-mixin, dataclass parent.
         """
         super().__init_subclass__(**kwargs)
-        # for base in cls.__mro__:
-        #     if not is_dataclass(base):
-        #         continue
-        #
-        #     # Check if this base class has fields with 'addr' metadata.
-        #     possible_map = {
-        #         f.metadata["addr"]: f.name for f in fields(base) if "addr" in f.metadata
-        #     }
-        #     if possible_map:
-        #         cls._MAP = possible_map
-        #         break
-        # else:
-        #     raise TypeError(
-        #         f"{cls} does not inherit from a dataclass with 'addr' metadata fields"
-        #     )
-
         for base in cls.__mro__:
             if is_dataclass(base) and not issubclass(base, FromSysexMixin):
                 cls._MAP = {

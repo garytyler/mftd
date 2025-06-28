@@ -15,11 +15,12 @@ from mftd.constants import (
     DetentColorValue,
     EncoderIndicatorDisplayType,
 )
-from mftd.transform.base import BaseModel
+from mftd.transform.base import model
 from mftd.transform.sysex import FromSysexMixin, ToSysexMixin
 
 
-class EncoderConfig(BaseModel):
+@model
+class EncoderConfig:
     detent: SysexBool = field(
         default=SysexBool.FALSE,
         metadata={"addr": 10},
