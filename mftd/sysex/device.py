@@ -1,5 +1,6 @@
-from dataclasses import field
-from typing import ClassVar, Sequence, Any
+from dataclasses import field, asdict
+from typing import ClassVar, Sequence
+from typing import cast, Any
 
 from mftd import constants
 from mftd.constants import SysexBool, SideSwitchAction, MidiChannel
@@ -73,6 +74,17 @@ class DeviceConfigOut(DeviceConfig, ToSysexMixin):
             return value + 1
         return value
 
+    @classmethod
+    def from_config(cls, config: DeviceConfig) -> "DeviceConfigOut":
+        """Creates a DeviceConfigOut instance from a DeviceConfig."""
+        # Cast to Any to bypass type checking for asdict
+        return cls(**asdict(cast(Any, config)))
+
 
 class DeviceConfigIn(DeviceConfig, FromSysexMixin):
     _HEADER: ClassVar[Sequence[int]] = (0x00, 0x01, 0x79, 0x02, 0x00)
+
+    def to_config(self) -> "DeviceConfig":
+        """Transforms a DeviceConfigIn instance to a DeviceConfig."""
+        # Cast to Any to bypass type checking for asdict
+        return DeviceConfig(**asdict(cast(Any, self)))
