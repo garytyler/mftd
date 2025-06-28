@@ -3,8 +3,8 @@ from typing import ClassVar, Sequence, Any
 
 from mftd import constants
 from mftd.constants import SysexBool, SideSwitchAction, MidiChannel
-from mftd.transform.base import model
-from mftd.transform.sysex import FromSysexMixin, ToSysexMixin
+from mftd.sysex.base import model
+from mftd.sysex.mixins import FromSysexMixin, ToSysexMixin
 
 
 @model

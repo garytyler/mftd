@@ -32,7 +32,7 @@ class FromSysexMixin:
 
     @classmethod
     def _transform_sysex_in(cls: Type[Self], field_name: str, value: Any) -> Any:
-        """Hook to transform a single value from a SysEx message."""
+        """Hook to sysex a single value from a SysEx message."""
         return value
 
     @classmethod
@@ -67,7 +67,7 @@ class ToSysexMixin:
     _HEADER: ClassVar[Sequence[int]]
 
     def _transform_sysex_out(self, field_name: str, value: Any) -> Any:
-        """Hook to transform a single value for a SysEx message."""
+        """Hook to sysex a single value for a SysEx message."""
         return value
 
     def to_sysex(self) -> tuple[Sequence[int], ...]:

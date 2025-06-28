@@ -6,7 +6,7 @@ from mftd.constants import (
     MidiChannel,
     SideSwitchAction,
 )
-from mftd.transform.device import DeviceConfigOut
+from mftd.sysex.device import DeviceConfigOut
 
 out_config_1 = DeviceConfigOut()
 out_config_2 = DeviceConfigOut(
@@ -29,5 +29,4 @@ if midi_out:
     for sysex_msg in out_config_1.to_sysex():
         midi_out.send_message(sysex_msg)
     time.sleep(5)
-    for sysex_msg in out_config_2.to_sysex():
-        midi_out.send_message(sysex_msg)
+    in_config = out_config_1.to_sysex()
