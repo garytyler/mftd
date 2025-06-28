@@ -1,24 +1,15 @@
-"""
-demo.py – end-to-end example for sysex_models.py
-No third-party libraries required; MIDI I/O is just simulated here.
-"""
+import time
 
 from mftd import create_midi_output
-from mftd.base import DeviceConfigOut
 from mftd.constants import (
     SysexBool,
     MidiChannel,
     SideSwitchAction,
-    EncoderMovementType,
-    EncoderSwitchActionType,
-    EncoderMidiMessageType,
-    ColorValue,
-    DetentColorValue,
-    EncoderIndicatorDisplayType,
 )
+from mftd.transform.device import DeviceConfigOut
 
-# out_cfg = DeviceConfigOut()
-out_cfg = DeviceConfigOut(
+out_config_1 = DeviceConfigOut()
+out_config_2 = DeviceConfigOut(
     system_midi_channel=MidiChannel.SHIFT,
     bank_side_buttons=SysexBool.FALSE,
     left_button_1_function=SideSwitchAction.CC_TOGGLE,
@@ -32,10 +23,11 @@ out_cfg = DeviceConfigOut(
     rgb_led_brightness=60,
     indicator_global_brightness=127,
 )
-print("Outgoing dataclass  :", out_cfg)
-print("Outgoing SysEx bytes :", out_cfg.to_sysex())
 
 midi_out = create_midi_output()
 if midi_out:
-    for sysex_msg in out_cfg.to_sysex():
+    for sysex_msg in out_config_1.to_sysex():
+        midi_out.send_message(sysex_msg)
+    time.sleep(5)
+    for sysex_msg in out_config_2.to_sysex():
         midi_out.send_message(sysex_msg)
