@@ -18,7 +18,7 @@ class MidiFighterTwister:
             for sysex_msg in out_config.to_sysex():
                 self.midi_out.send_message(sysex_msg)
 
-    def get_device_config(self) -> Optional[DeviceConfig]:
+    def get_device_config(self, timeout=2.0) -> Optional[DeviceConfig]:
         """
         Retrieves the device configuration from the Midi Fighter Twister.
 
@@ -41,26 +41,20 @@ class MidiFighterTwister:
             0x00,
             0xF7,
         )
+
+        start_time = time.time()
         self.midi_out.send_message(request_message)
 
-        print("Sent config request. Waiting for response...")
-        start_time = time.time()
-        timeout_seconds = 2.0
-        while time.time() - start_time < timeout_seconds:
+        while time.time() - start_time < timeout:
             message_tuple = self.midi_in.get_message()
             if message_tuple and message_tuple[0]:
                 message = message_tuple[0]
-                # Print the received message for debugging purposes
-                print(f"Received MIDI message: {[hex(b) for b in message]}")
                 try:
                     config_in = DeviceConfigIn.from_sysex(message)
                     if config_in:
-                        print("Successfully parsed config.")
                         return config_in.to_config()
                 except ValueError as e:
-                    # Print the exact error to see why parsing fails
                     print(f"Could not parse message: {e}")
-                    # Continue to the next message
                     pass
             time.sleep(0.01)
 
