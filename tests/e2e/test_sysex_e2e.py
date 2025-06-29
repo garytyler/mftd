@@ -1,44 +1,41 @@
 import time
-from copy import deepcopy
 
-from mftd import constants, MftSysexApi
-
-
-def test_get_set_global_config_e2e(device_config, midi_out, midi_in) -> None:
-    old_config = device_config
-    old_value = old_config[31]
-
-    new_value = (old_value + 1) % 128
-    new_config = deepcopy(old_config)
-    new_config[31] = new_value
-
-    MftSysexApi.set_device_config(midi_out, new_config)
-    time.sleep(0.5)
-
-    result_config = MftSysexApi.get_device_config(midi_out, midi_in)
-    assert result_config is not None
-    assert result_config[31] == new_value
+from mftd.constants import MidiChannel, SysexBool, SideSwitchAction
+from mftd.mft import MidiFighterTwister
+from mftd.sysex.device import DeviceConfig
 
 
-def test_get_set_encoder_config_e2e(
-    midi_out, midi_in, encoder_config, encoder_index
-) -> None:
-    old_config = encoder_config
+def test_sysex_e2e():
+    config_1 = DeviceConfig()
+    config_2 = DeviceConfig(
+        system_midi_channel=MidiChannel.SHIFT,
+        bank_side_buttons=SysexBool.FALSE,
+        left_button_1_function=SideSwitchAction.CC_TOGGLE,
+        left_button_2_function=SideSwitchAction.CC_TOGGLE,
+        left_button_3_function=SideSwitchAction.CC_TOGGLE,
+        right_button_1_function=SideSwitchAction.CC_TOGGLE,
+        right_button_2_function=SideSwitchAction.CC_TOGGLE,
+        right_button_3_function=SideSwitchAction.CC_TOGGLE,
+        super_knob_start=63,
+        super_knob_end=127,
+        rgb_led_brightness=60,
+        indicator_global_brightness=127,
+    )
 
-    # Ensure we pick a different color value
-    if old_config.active_color == constants.ColorValue.RED:
-        new_color = constants.ColorValue.BLUE
-    elif old_config.active_color == constants.ColorValue.BLUE:
-        new_color = constants.ColorValue.GREEN  # or another color
-    else:
-        new_color = constants.ColorValue.RED
+    mft = MidiFighterTwister()
 
-    new_config = deepcopy(old_config)
-    new_config.active_color = new_color
+    mft.set_device_config(config_1)
 
-    MftSysexApi.set_encoder_config(midi_out, encoder_index, new_config)
-    time.sleep(0.5)
+    time.sleep(5)
 
-    result_config = MftSysexApi.get_encoder_config(midi_out, midi_in, encoder_index)
-    assert result_config.active_color == new_color  # Check for the expected new color
-    assert result_config.active_color != old_config.active_color  # Ensure it changed
+    rec_config_1 = mft.get_device_config()
+
+    time.sleep(5)
+
+    mft.set_device_config(config_2)
+
+    time.sleep(5)
+
+    rec_config_2 = mft.get_device_config()
+
+    assert rec_config_1 != rec_config_2

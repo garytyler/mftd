@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import fields, is_dataclass
 from enum import IntEnum
-from typing import Any, ClassVar, Type, Sequence, Mapping, TypeVar
+from typing import Any, ClassVar, Type, Sequence, Mapping, TypeVar, get_type_hints
 
 Self = TypeVar("Self", bound="FromSysexMixin")
 
@@ -47,7 +47,7 @@ class FromSysexMixin:
             raise ValueError("addr/val pairs must be even length")
 
         it = iter(body)
-        kwargs: dict[str, int] = {}
+        kwargs: dict[str, Any] = {}
         for addr, val in zip(it, it):
             if addr in cls._MAP:
                 field_name = cls._MAP[addr]
@@ -57,6 +57,23 @@ class FromSysexMixin:
         missing = set(cls._MAP.values()) - kwargs.keys()
         if missing:
             raise ValueError(f"missing fields: {', '.join(missing)}")
+
+        data_cls = None
+        for base in cls.__mro__:
+            if is_dataclass(base) and not issubclass(base, FromSysexMixin):
+                data_cls = base
+                break
+
+        if data_cls:
+            hints = get_type_hints(data_cls)
+            for name, value in kwargs.items():
+                if name in hints:
+                    field_type = hints[name]
+                    try:
+                        if issubclass(field_type, IntEnum):
+                            kwargs[name] = field_type(value)
+                    except TypeError:
+                        pass
 
         return cls(**kwargs)
 

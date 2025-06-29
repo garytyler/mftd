@@ -3,7 +3,7 @@ from typing import ClassVar, Sequence
 from typing import cast, Any
 
 from mftd import constants
-from mftd.constants import SysexBool, SideSwitchAction, MidiChannel
+from mftd.constants import SysexBool, SideSwitchAction, MidiChannel, SysexCommands
 from mftd.sysex.base import model
 from mftd.sysex.mixins import FromSysexMixin, ToSysexMixin
 
@@ -82,7 +82,13 @@ class DeviceConfigOut(DeviceConfig, ToSysexMixin):
 
 
 class DeviceConfigIn(DeviceConfig, FromSysexMixin):
-    _HEADER: ClassVar[Sequence[int]] = (0x00, 0x01, 0x79, 0x02, 0x00)
+    _HEADER: ClassVar[Sequence[int]] = (
+        constants.MIDI_MFR_ID_0,
+        constants.MIDI_MFR_ID_1,
+        constants.MIDI_MFR_ID_2,
+        SysexCommands.PULL_CONF,
+        0x01,
+    )
 
     def to_config(self) -> "DeviceConfig":
         """Transforms a DeviceConfigIn instance to a DeviceConfig."""
