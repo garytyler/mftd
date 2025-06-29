@@ -96,7 +96,7 @@ class EncoderConfigOut(ToSysexMixin):
     _DATA_CLASS: ClassVar[type] = EncoderConfig
 
     def __init__(self, config: EncoderConfig):
-        self.data = config
+        super().__init__(config)
 
 
 class EncoderConfigIn(FromSysexMixin):

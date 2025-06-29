@@ -88,7 +88,7 @@ class DeviceConfigOut(ToSysexMixin):
     )
 
     def __init__(self, config: DeviceConfig):
-        self.data = config
+        super().__init__(config)
 
     def _transform_sysex_out(self, field_name: str, value: Any) -> Any:
         if field_name == "system_midi_channel":

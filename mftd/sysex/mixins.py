@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import fields, is_dataclass
 from enum import IntEnum
+from collections.abc import Sequence
 from typing import (
     Any,
     ClassVar,
     Type,
-    Sequence,
     Mapping,
     TypeVar,
     get_type_hints,
@@ -16,7 +16,7 @@ Self = TypeVar("Self", bound="FromSysexMixin")
 
 
 class FromSysexMixin:
-    """Mixin for classes that can be created from SysEx messages."""
+    """Base class for objects created from SysEx messages."""
 
     _HEADER: ClassVar[Sequence[int]]
     _DATA_CLASS: ClassVar[type]
@@ -78,20 +78,21 @@ class FromSysexMixin:
         return cls(data_instance)
 
 
-class ToSysexMixin:
-    """Mixin for classes that convert dataclasses to SysEx messages."""
+class ToSysexMixin(Sequence[int]):
+    """Base class for objects representing outgoing SysEx commands."""
 
     _HEADER: ClassVar[Sequence[int]]
     data: Any
+    _msg: tuple[int, ...]
 
     def _transform_sysex_out(self, field_name: str, value: Any) -> Any:
         """Hook to modify a single value for a SysEx message."""
         return value
 
-    def to_sysex(self) -> tuple[Sequence[int], ...]:
-        """Convert the stored dataclass to a sequence of SysEx messages."""
-        if not is_dataclass(self.data):
+    def __init__(self, data: Any):
+        if not is_dataclass(data):
             raise TypeError("data attribute must be a dataclass instance")
+        self.data = data
 
         payload = []
         for f in fields(self.data):
@@ -108,5 +109,17 @@ class ToSysexMixin:
                 payload.append(addr)
                 payload.append(int(value))
 
-        sysex_msg = (*self._HEADER, *payload, 0xF7)
-        return (sysex_msg,)
+        self._msg = (*self._HEADER, *payload, 0xF7)
+
+    def __len__(self) -> int:  # type: ignore[override]
+        return len(self._msg)
+
+    def __getitem__(self, index: int) -> int:  # type: ignore[override]
+        return self._msg[index]
+
+    def __iter__(self):  # type: ignore[override]
+        return iter(self._msg)
+
+    def to_sysex(self) -> tuple[Sequence[int], ...]:
+        """Return the generated SysEx message."""
+        return (self._msg,)
