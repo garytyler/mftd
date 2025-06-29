@@ -1,14 +1,12 @@
-import time
-
 from mftd.constants import (
     SysexBool,
     MidiChannel,
     SideSwitchAction,
 )
-from mftd.mft import MidiFighterTwister
 from mftd.sysex.device import DeviceConfig
 
 config_1 = DeviceConfig()
+config_1.system_midi_channel = MidiChannel.SWITCH_ANIMATION
 config_2 = DeviceConfig(
     system_midi_channel=MidiChannel.SHIFT,
     bank_side_buttons=SysexBool.FALSE,
@@ -24,13 +22,13 @@ config_2 = DeviceConfig(
     indicator_global_brightness=127,
 )
 
-mft = MidiFighterTwister()
-mft.set_device_config(config_1)
-time.sleep(5)
-rec_config_1 = mft.get_device_config()
-print(rec_config_1)
-time.sleep(5)
-mft.set_device_config(config_2)
-time.sleep(5)
-rec_config_2 = mft.get_device_config()
-print(rec_config_2)
+# mft = MidiFighterTwister()
+# mft.set_device_config(config_1)
+# time.sleep(5)
+# rec_config_1 = mft.get_device_config()
+# print(rec_config_1)
+# time.sleep(5)
+# mft.set_device_config(config_2)
+# time.sleep(5)
+# rec_config_2 = mft.get_device_config()
+# print(rec_config_2)

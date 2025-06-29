@@ -59,6 +59,24 @@ class DeviceConfig:
         metadata={"addr": 32},
     )
 
+    def get_sysex_push_command(self) -> tuple[Sequence[int], ...]:
+        """Returns the SysEx message to push this configuration to the device."""
+        out_config = DeviceConfigOut.from_config(self)
+        return out_config.to_sysex()
+
+    @staticmethod
+    def get_sysex_pull_command() -> Sequence[int]:
+        """Returns the SysEx message to request the configuration from the device."""
+        return (
+            0xF0,
+            constants.MIDI_MFR_ID_0,
+            constants.MIDI_MFR_ID_1,
+            constants.MIDI_MFR_ID_2,
+            constants.SysexCommands.PULL_CONF,
+            0x00,
+            0xF7,
+        )
+
 
 class DeviceConfigOut(DeviceConfig, ToSysexMixin):
     _HEADER: ClassVar[Sequence[int]] = (

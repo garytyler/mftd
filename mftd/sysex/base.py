@@ -27,7 +27,7 @@ def _validate_fields(instance: Any) -> None:
             raise ValueError(f"{fld.name}={as_int} is outside 0-127")
 
 
-@dataclass_transform(frozen_default=True)
+@dataclass_transform()
 def model(_cls=None, **dc_kwargs):
 
     def wrap(cls):
@@ -45,6 +45,6 @@ def model(_cls=None, **dc_kwargs):
         setattr(cls, "__post_init__", __post_init__)
 
         # Turn the class into a dataclass
-        return dataclass(frozen=True, slots=True, **dc_kwargs)(cls)
+        return dataclass(frozen=False, slots=True, **dc_kwargs)(cls)
 
     return wrap(_cls) if _cls else wrap
