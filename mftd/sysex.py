@@ -130,7 +130,7 @@ class MftSysexApi:
         config_values = {}
         end = time.time() + timeout
 
-        # Loop to receive sysex messages until timeout or all values are received
+        # Loop to receive sysex messages until timeout
         while time.time() < end:
             remaining_time = end - time.time()
             if remaining_time <= 0:
@@ -146,10 +146,6 @@ class MftSysexApi:
                     addr = response[i]
                     val = response[i + 1]
                     config_values[addr] = val
-
-            # Check if we have received all expected configuration values
-            if len(config_values) == len(DeviceConfig.ADDRESSES):
-                break
 
         if not config_values:
             raise RuntimeError("Failed to receive device configuration")
