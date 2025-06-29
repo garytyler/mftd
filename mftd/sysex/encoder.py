@@ -83,7 +83,7 @@ class EncoderConfig:
     )
 
 
-class EncoderConfigOut(EncoderConfig, ToSysexMixin):
+class EncoderConfigOut(ToSysexMixin):
     _HEADER: ClassVar[Sequence[int]] = (
         0xF0,
         constants.MIDI_MFR_ID_0,
@@ -93,6 +93,19 @@ class EncoderConfigOut(EncoderConfig, ToSysexMixin):
         0x00,
     )
 
+    _DATA_CLASS: ClassVar[type] = EncoderConfig
 
-class EncoderConfigIn(EncoderConfig, FromSysexMixin):
+    def __init__(self, config: EncoderConfig):
+        self.data = config
+
+
+class EncoderConfigIn(FromSysexMixin):
     _HEADER: ClassVar[Sequence[int]] = (0x00, 0x01, 0x79, 0x03, 0x00)
+
+    _DATA_CLASS: ClassVar[type] = EncoderConfig
+
+    def __init__(self, config: EncoderConfig):
+        self.data = config
+
+    def to_config(self) -> EncoderConfig:
+        return self.data

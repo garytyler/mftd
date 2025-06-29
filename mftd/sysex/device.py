@@ -1,6 +1,6 @@
-from dataclasses import field, asdict
+from dataclasses import field
 from typing import ClassVar, Sequence
-from typing import cast, Any
+from typing import Any
 
 from mftd import constants
 from mftd.constants import SysexBool, SideSwitchAction, MidiChannel, SysexCommands
@@ -78,7 +78,7 @@ class DeviceConfig:
         )
 
 
-class DeviceConfigOut(DeviceConfig, ToSysexMixin):
+class DeviceConfigOut(ToSysexMixin):
     _HEADER: ClassVar[Sequence[int]] = (
         0xF0,
         constants.MIDI_MFR_ID_0,
@@ -87,6 +87,9 @@ class DeviceConfigOut(DeviceConfig, ToSysexMixin):
         constants.SysexCommands.PUSH_CONF,
     )
 
+    def __init__(self, config: DeviceConfig):
+        self.data = config
+
     def _transform_sysex_out(self, field_name: str, value: Any) -> Any:
         if field_name == "system_midi_channel":
             return value + 1
@@ -94,12 +97,11 @@ class DeviceConfigOut(DeviceConfig, ToSysexMixin):
 
     @classmethod
     def from_config(cls, config: DeviceConfig) -> "DeviceConfigOut":
-        """Creates a DeviceConfigOut instance from a DeviceConfig."""
-        # Cast to Any to bypass type checking for asdict
-        return cls(**asdict(cast(Any, config)))
+        """Create a DeviceConfigOut instance from a DeviceConfig."""
+        return cls(config)
 
 
-class DeviceConfigIn(DeviceConfig, FromSysexMixin):
+class DeviceConfigIn(FromSysexMixin):
     _HEADER: ClassVar[Sequence[int]] = (
         constants.MIDI_MFR_ID_0,
         constants.MIDI_MFR_ID_1,
@@ -108,7 +110,11 @@ class DeviceConfigIn(DeviceConfig, FromSysexMixin):
         0x01,
     )
 
+    _DATA_CLASS: ClassVar[type] = DeviceConfig
+
+    def __init__(self, config: DeviceConfig):
+        self.data = config
+
     def to_config(self) -> "DeviceConfig":
-        """Transforms a DeviceConfigIn instance to a DeviceConfig."""
-        # Cast to Any to bypass type checking for asdict
-        return DeviceConfig(**asdict(cast(Any, self)))
+        """Return the underlying DeviceConfig instance."""
+        return self.data

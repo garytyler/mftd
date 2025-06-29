@@ -2,33 +2,39 @@ from __future__ import annotations
 
 from dataclasses import fields, is_dataclass
 from enum import IntEnum
-from typing import Any, ClassVar, Type, Sequence, Mapping, TypeVar, get_type_hints
+from typing import (
+    Any,
+    ClassVar,
+    Type,
+    Sequence,
+    Mapping,
+    TypeVar,
+    get_type_hints,
+)
 
 Self = TypeVar("Self", bound="FromSysexMixin")
 
 
 class FromSysexMixin:
-    """A mixin for dataclasses that can be created from SysEx messages."""
+    """Mixin for classes that can be created from SysEx messages."""
 
     _HEADER: ClassVar[Sequence[int]]
+    _DATA_CLASS: ClassVar[type]
     _MAP: ClassVar[Mapping[int, str]]
 
     def __init_subclass__(cls, **kwargs):
-        """
-        Creates the address-to-field-name map (_MAP)
-        for any subclass by finding the first non-mixin, dataclass parent.
-        """
+        """Create the address map for the provided dataclass."""
         super().__init_subclass__(**kwargs)
-        for base in cls.__mro__:
-            if is_dataclass(base) and not issubclass(base, FromSysexMixin):
-                cls._MAP = {
-                    f.metadata["addr"]: f.name
-                    for f in fields(base)
-                    if "addr" in f.metadata
-                }
-                break
-        else:
-            raise TypeError(f"{cls} does not inherit from a non-mixin dataclass")
+
+        data_cls = getattr(cls, "_DATA_CLASS", None)
+        if data_cls is None or not is_dataclass(data_cls):
+            raise TypeError(f"{cls.__name__} must define a dataclass in _DATA_CLASS")
+
+        cls._MAP = {
+            f.metadata["addr"]: f.name
+            for f in fields(data_cls)
+            if "addr" in f.metadata
+        }
 
     @classmethod
     def _transform_sysex_in(cls: Type[Self], field_name: str, value: Any) -> Any:
@@ -58,53 +64,41 @@ class FromSysexMixin:
         if missing:
             raise ValueError(f"missing fields: {', '.join(missing)}")
 
-        data_cls = None
-        for base in cls.__mro__:
-            if is_dataclass(base) and not issubclass(base, FromSysexMixin):
-                data_cls = base
-                break
+        hints = get_type_hints(cls._DATA_CLASS)
+        for name, value in kwargs.items():
+            if name in hints:
+                field_type = hints[name]
+                try:
+                    if issubclass(field_type, IntEnum):
+                        kwargs[name] = field_type(value)
+                except TypeError:
+                    pass
 
-        if data_cls:
-            hints = get_type_hints(data_cls)
-            for name, value in kwargs.items():
-                if name in hints:
-                    field_type = hints[name]
-                    try:
-                        if issubclass(field_type, IntEnum):
-                            kwargs[name] = field_type(value)
-                    except TypeError:
-                        pass
-
-        return cls(**kwargs)
+        data_instance = cls._DATA_CLASS(**kwargs)
+        return cls(data_instance)
 
 
 class ToSysexMixin:
-    """A mixin for dataclasses that can be converted to SysEx messages."""
+    """Mixin for classes that convert dataclasses to SysEx messages."""
 
     _HEADER: ClassVar[Sequence[int]]
+    data: Any
 
     def _transform_sysex_out(self, field_name: str, value: Any) -> Any:
-        """Hook to sysex a single value for a SysEx message."""
+        """Hook to modify a single value for a SysEx message."""
         return value
 
     def to_sysex(self) -> tuple[Sequence[int], ...]:
-        """
-        Converts the dataclass to a sequence of SysEx messages.
-        This base implementation creates a single message.
-        """
-        for base in self.__class__.__mro__:
-            if is_dataclass(base) and fields(base):
-                data_cls = base
-                break
-        else:
-            raise TypeError(f"Not a data class with fields: {self.__class__}")
+        """Convert the stored dataclass to a sequence of SysEx messages."""
+        if not is_dataclass(self.data):
+            raise TypeError("data attribute must be a dataclass instance")
 
         payload = []
-        for f in fields(data_cls):
+        for f in fields(self.data):
             if "addr" in f.metadata:
                 addr = f.metadata["addr"]
                 name = f.name
-                value = getattr(self, name)
+                value = getattr(self.data, name)
 
                 value = self._transform_sysex_out(name, value)
 
@@ -113,5 +107,6 @@ class ToSysexMixin:
 
                 payload.append(addr)
                 payload.append(int(value))
+
         sysex_msg = (*self._HEADER, *payload, 0xF7)
         return (sysex_msg,)
