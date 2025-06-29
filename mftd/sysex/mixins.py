@@ -41,8 +41,9 @@ class FromSysexMixin:
         """Hook to sysex a single value from a SysEx message."""
         return value
 
-    @classmethod
-    def from_sysex(cls: Type[Self], pkt: Sequence[int]) -> Self:
+    def __init__(self, pkt: Sequence[int]):
+        cls = self.__class__
+
         if len(pkt) < 3 or pkt[0] != 0xF0 or pkt[-1] != 0xF7:
             raise ValueError("not a SysEx packet")
         if list(pkt[1 : 1 + len(cls._HEADER)]) != list(cls._HEADER):
@@ -74,8 +75,11 @@ class FromSysexMixin:
                 except TypeError:
                     pass
 
-        data_instance = cls._DATA_CLASS(**kwargs)
-        return cls(data_instance)
+        self.data = cls._DATA_CLASS(**kwargs)
+
+    @classmethod
+    def from_sysex(cls: Type[Self], pkt: Sequence[int]) -> Self:
+        return cls(pkt)
 
 
 class ToSysexMixin(Sequence[int]):

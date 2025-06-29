@@ -112,9 +112,9 @@ class DeviceConfigIn(FromSysexMixin):
 
     _DATA_CLASS: ClassVar[type] = DeviceConfig
 
-    def __init__(self, config: DeviceConfig):
-        self.data = config
+    def __init__(self, pkt: Sequence[int]):
+        super().__init__(pkt)
 
     def to_config(self) -> "DeviceConfig":
-        """Return the underlying DeviceConfig instance."""
+        """Return the parsed DeviceConfig instance."""
         return self.data

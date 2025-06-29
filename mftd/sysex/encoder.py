@@ -104,8 +104,8 @@ class EncoderConfigIn(FromSysexMixin):
 
     _DATA_CLASS: ClassVar[type] = EncoderConfig
 
-    def __init__(self, config: EncoderConfig):
-        self.data = config
+    def __init__(self, pkt: Sequence[int]):
+        super().__init__(pkt)
 
     def to_config(self) -> EncoderConfig:
         return self.data
