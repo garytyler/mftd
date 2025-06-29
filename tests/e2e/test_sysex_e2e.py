@@ -1,5 +1,3 @@
-import time
-
 from mftd.constants import MidiChannel, SysexBool, SideSwitchAction
 from mftd.mft import MidiFighterTwister
 from mftd.sysex.device import DeviceConfig
@@ -23,18 +21,8 @@ def test_sysex_e2e():
     )
 
     mft = MidiFighterTwister()
-
     mft.set_device_config(config_1)
-
-    time.sleep(5)
-
     rec_config_1 = mft.get_device_config()
-    time.sleep(5)
-
     mft.set_device_config(config_2)
-
-    time.sleep(5)
-
     rec_config_2 = mft.get_device_config()
-
     assert rec_config_1 != rec_config_2
