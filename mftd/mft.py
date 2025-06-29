@@ -28,6 +28,10 @@ class MidiFighterTwister:
         if not self.midi_out or not self.midi_in:
             return None
 
+        # Drain any unexpected messages from the input buffer.
+        while self.midi_in.get_message():
+            pass
+
         request_message = (
             0xF0,
             constants.MIDI_MFR_ID_0,

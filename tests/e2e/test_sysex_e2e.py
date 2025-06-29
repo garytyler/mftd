@@ -29,7 +29,6 @@ def test_sysex_e2e():
     time.sleep(5)
 
     rec_config_1 = mft.get_device_config()
-
     time.sleep(5)
 
     mft.set_device_config(config_2)
