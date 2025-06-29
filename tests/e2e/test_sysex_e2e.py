@@ -6,18 +6,18 @@ from mftd import constants, MftSysexApi
 
 def test_get_set_global_config_e2e(device_config, midi_out, midi_in) -> None:
     old_config = device_config
-    old_value = old_config[31]
+    old_value = old_config.rgb_led_brightness
 
     new_value = (old_value + 1) % 128
     new_config = deepcopy(old_config)
-    new_config[31] = new_value
+    new_config.rgb_led_brightness = new_value
 
     MftSysexApi.set_device_config(midi_out, new_config)
     time.sleep(0.5)
 
     result_config = MftSysexApi.get_device_config(midi_out, midi_in)
     assert result_config is not None
-    assert result_config[31] == new_value
+    assert result_config.rgb_led_brightness == new_value
 
 
 def test_get_set_encoder_config_e2e(

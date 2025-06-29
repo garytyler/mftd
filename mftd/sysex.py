@@ -28,8 +28,8 @@ class MftSysexApi:
 
         pairs: list[int] = []
 
-        for addr in config.ADDRESSES_TO_NAMES:
-            val = config[addr]
+        for addr, name in config.ADDRESSES_TO_NAMES.items():
+            val = getattr(config, name)
             if val is not None:
                 pairs.extend([addr, _int(val)])
 
@@ -126,39 +126,49 @@ class MftSysexApi:
             0xF7,
         ]
         MftSysexApi._send_sysex(midi_out, request)
-        response = MftSysexApi._receive_sysex(
-            midi_in, constants.SysexCommands.PULL_CONF, timeout
-        )
-        if not response:
-            raise RuntimeError("Failed to receive device configuration")
+
+        config_values = {}
         end = time.time() + timeout
-        config = DeviceConfig()
-        received = set()
-        unseen = set(config.keys())
-        for i in range(6, len(response) - 1, 2):
-            addr = response[i]
-            val = response[i + 1]
-            config[addr] = val
-            unseen.remove(addr)
-            received.add(addr)
-        if unseen:
-            unseen_names = [config.ADDRESSES_TO_NAMES[addr] for addr in unseen]
+
+        # Loop to receive sysex messages until timeout or all values are received
+        while time.time() < end:
+            remaining_time = end - time.time()
+            if remaining_time <= 0:
+                break
+
+            response = MftSysexApi._receive_sysex(
+                midi_in, constants.SysexCommands.PULL_CONF, remaining_time
+            )
+
+            if response:
+                # The payload is a sequence of address-value pairs
+                for i in range(6, len(response) - 1, 2):
+                    addr = response[i]
+                    val = response[i + 1]
+                    config_values[addr] = val
+
+            # Check if we have received all expected configuration values
+            if len(config_values) == len(DeviceConfig.ADDRESSES):
+                break
+
+        if not config_values:
+            raise RuntimeError("Failed to receive device configuration")
+
+        # Verify that all configuration values have been received
+        if len(config_values) < len(DeviceConfig.ADDRESSES):
+            unseen_addrs = set(DeviceConfig.ADDRESSES) - set(config_values.keys())
+            unseen_names = [
+                DeviceConfig.ADDRESSES_TO_NAMES[addr] for addr in unseen_addrs
+            ]
             raise RuntimeError(f"Missing config values: {unseen_names}")
 
-        while time.time() < end and len(received) < len(config.keys()):
-            remaining = end - time.time()
-            response = MftSysexApi._receive_sysex(
-                midi_in, constants.SysexCommands.PULL_CONF, remaining
-            )
-            if not response:
-                break
-            for i in range(6, len(response) - 1, 2):
-                addr = response[i]
-                val = response[i + 1]
-                config[addr] = val
-                received.add(addr)
+        # Prepare arguments for DeviceConfig constructor
+        config_args = {
+            DeviceConfig.ADDRESSES_TO_NAMES[addr]: val
+            for addr, val in config_values.items()
+        }
 
-        return config
+        return DeviceConfig(**config_args)
 
     @staticmethod
     def get_encoder_config(

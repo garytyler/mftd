@@ -6,7 +6,7 @@ def test_set_global_config(rtmidi_stub):
     api = MftSysexApi
     out = rtmidi_stub.MidiOut()
     cfg = DeviceConfig()
-    cfg[31] = 88
+    cfg.rgb_led_brightness = 88
 
     api.set_device_config(out, cfg)
 
@@ -59,7 +59,7 @@ def test_get_global_config(rtmidi_stub):
 
     cfg = api.get_device_config(out, inp)
 
-    assert cfg[31] == 99
+    assert cfg.rgb_led_brightness == 99
     out_msg = out.messages[-1]
     assert out_msg[4] == consts.SysexCommands.PULL_CONF
 
