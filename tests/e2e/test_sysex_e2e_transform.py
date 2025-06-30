@@ -1,11 +1,21 @@
 import time
 
+import pytest
+
 from mftd import DeviceConfig
 from mftd.api import MftApi
 from mftd.constants import MidiChannel, SysexBool, SideSwitchAction
+from mftd.midi import create_midi_input, create_midi_output
 
 
 def test_set_device_config_twice_sysex_e2e():
+    midi_out = create_midi_output()
+    midi_in = create_midi_input()
+    if midi_out is None or midi_in is None:
+        pytest.skip("MIDI device not available")
+    if "FakeMidiOut" in str(type(midi_out)) or "FakeMidiIn" in str(type(midi_in)):
+        pytest.skip("Real MIDI device required for E2E tests")
+
     config_1 = DeviceConfig()
     config_2 = DeviceConfig(
         system_midi_channel=MidiChannel.SHIFT,

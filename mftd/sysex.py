@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import fields
 from typing import Iterable, Optional, List
 
 from . import constants
@@ -28,8 +29,11 @@ class MftSysexApi:
 
         pairs: list[int] = []
 
-        for addr, name in config.ADDRESSES_TO_NAMES.items():
-            val = getattr(config, name)
+        for f in fields(config):
+            if "addr" not in f.metadata:
+                continue
+            addr = f.metadata["addr"]
+            val = getattr(config, f.name)
             if val is not None:
                 pairs.extend([addr, _int(val)])
 
@@ -62,8 +66,11 @@ class MftSysexApi:
 
         sysex_tag = encoder_index + 1
         params: List[int] = []
-        for name, address in config.NAMES_TO_ADDRESSES.items():
-            value = getattr(config, name)
+        for f in fields(config):
+            if "addr" not in f.metadata:
+                continue
+            address = f.metadata["addr"]
+            value = getattr(config, f.name)
             if value is None:
                 continue
             elif hasattr(value, "value"):
@@ -150,19 +157,21 @@ class MftSysexApi:
         if not config_values:
             raise RuntimeError("Failed to receive device configuration")
 
+        # Build address-to-name map from dataclass metadata
+        addr_to_name = {
+            f.metadata["addr"]: f.name
+            for f in fields(DeviceConfig)
+            if "addr" in f.metadata
+        }
+
         # Verify that all configuration values have been received
-        if len(config_values) < len(DeviceConfig.ADDRESSES):
-            unseen_addrs = set(DeviceConfig.ADDRESSES) - set(config_values.keys())
-            unseen_names = [
-                DeviceConfig.ADDRESSES_TO_NAMES[addr] for addr in unseen_addrs
-            ]
+        if len(config_values) < len(addr_to_name):
+            unseen_addrs = set(addr_to_name) - set(config_values.keys())
+            unseen_names = [addr_to_name[addr] for addr in unseen_addrs]
             raise RuntimeError(f"Missing config values: {unseen_names}")
 
         # Prepare arguments for DeviceConfig constructor
-        config_args = {
-            DeviceConfig.ADDRESSES_TO_NAMES[addr]: val
-            for addr, val in config_values.items()
-        }
+        config_args = {addr_to_name[addr]: val for addr, val in config_values.items()}
 
         return DeviceConfig(**config_args)
 
@@ -208,11 +217,16 @@ class MftSysexApi:
             raise RuntimeError(
                 f"Failed to receive encoder config for encoder {encoder_index}"
             )
-        # Create EncoderConfig with default values, not with encoder_index
-        cfg = EncoderConfig()  # This is the fix - don't pass encoder_index here
-        for name, address in cfg.NAMES_TO_ADDRESSES.items():
-            if address in responses:
-                setattr(cfg, name, responses[address])
+        # Create EncoderConfig instance and populate from responses
+        addr_to_name = {
+            f.metadata["addr"]: f.name
+            for f in fields(EncoderConfig)
+            if "addr" in f.metadata
+        }
+        cfg = EncoderConfig()
+        for addr, val in responses.items():
+            if addr in addr_to_name:
+                setattr(cfg, addr_to_name[addr], val)
         return cfg
 
     # Private helper functions -------------------------------------------------

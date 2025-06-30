@@ -64,21 +64,3 @@ class DeviceConfig:
             value = getattr(self, f.name)
             if not isinstance(value, f.type):
                 setattr(self, f.name, f.type(value))
-
-
-def _populate_class_attributes(cls):
-    addr_map = {}
-    name_map = {}
-    for f in fields(cls):
-        if "addr" in f.metadata:
-            addr = f.metadata["addr"]
-            name = f.name
-            addr_map[addr] = name
-            name_map[name] = addr
-    cls.ADDRESSES_TO_NAMES = addr_map
-    cls.NAMES_TO_ADDRESSES = name_map
-    cls.ADDRESSES = list(addr_map.keys())
-    cls.NAMES = list(name_map.keys())
-
-
-_populate_class_attributes(DeviceConfig)
