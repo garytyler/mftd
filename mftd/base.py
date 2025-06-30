@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import fields, replace
-from typing import Any, Callable, ClassVar, Mapping, get_type_hints
+from typing import Any, Callable, ClassVar, Mapping, Self, get_type_hints
 
 
 class BaseModel:
@@ -15,52 +15,55 @@ class BaseModel:
     # transmission to the device.
     _outbound_transforms: ClassVar[Mapping[str, Callable[[Any], Any]]] = {}
 
+    @staticmethod
+    def _coerce(value: Any, field_type: Any) -> Any:
+        """Return ``value`` converted to ``field_type`` when possible."""
+        try:
+            origin = getattr(field_type, "__origin__", None)
+            if origin is not None:
+                return value
+            if isinstance(field_type, type) and not isinstance(value, field_type):
+                return field_type(value)
+        except TypeError:
+            pass
+        return value
+
     def __post_init__(self) -> None:  # pragma: no cover - executed implicitly
-        """Ensure that all fields have the correct type."""
-        hints = get_type_hints(self.__class__)
+        """Ensure dataclass fields are the correct type."""
+        hints = get_type_hints(type(self))
         for f in fields(self):
-            value = getattr(self, f.name)
             field_type = hints.get(f.name, f.type)
-            try:
-                if hasattr(field_type, "__origin__"):
-                    continue
-                if isinstance(field_type, type) and not isinstance(value, field_type):
-                    setattr(self, f.name, field_type(value))
-            except TypeError:
-                continue
+            super().__setattr__(f.name, self._coerce(getattr(self, f.name), field_type))
 
     def __setattr__(self, name: str, value: Any) -> None:  # pragma: no cover
-        """Ensure that fields have the correct type when set via attribute."""
+        """Coerce attribute ``value`` to its declared type if possible."""
         field_obj = next((f for f in fields(self) if f.name == name), None)
         if field_obj is not None:
-            hints = get_type_hints(self.__class__)
+            hints = get_type_hints(type(self))
             field_type = hints.get(field_obj.name, field_obj.type)
-            try:
-                if hasattr(field_type, "__origin__"):
-                    pass
-                elif isinstance(field_type, type) and not isinstance(value, field_type):
-                    value = field_type(value)
-            except TypeError:
-                pass
+            value = self._coerce(value, field_type)
         super().__setattr__(name, value)
 
-    def to_device(self) -> "BaseModel":
+    def to_device(self) -> Self:
         """Return a new instance with outbound transforms applied."""
-        data = {f.name: getattr(self, f.name) for f in fields(self)}
-        for name, transform in self._outbound_transforms.items():
-            if name in data:
-                data[name] = transform(data[name])
+        data = {}
+        for f in fields(self):
+            val = getattr(self, f.name)
+            transform = self._outbound_transforms.get(f.name)
+            if transform:
+                val = transform(val)
+            data[f.name] = val
         return replace(self, **data)
 
     @classmethod
-    def from_device(cls, data: Mapping[str, Any]) -> "BaseModel":
+    def from_device(cls, data: Mapping[str, Any]) -> Self:
         """Create an instance from raw device values."""
         kwargs = {}
         for f in fields(cls):
             if f.name in data:
-                value = data[f.name]
+                val = data[f.name]
                 transform = cls._inbound_transforms.get(f.name)
                 if transform:
-                    value = transform(value)
-                kwargs[f.name] = value
+                    val = transform(val)
+                kwargs[f.name] = val
         return cls(**kwargs)
