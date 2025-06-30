@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import field, dataclass, fields
+from dataclasses import field, dataclass
 
 from mftd.constants import (
     MidiChannel,
@@ -12,10 +12,11 @@ from mftd.constants import (
     DetentColorValue,
     EncoderIndicatorDisplayType,
 )
+from .base import BaseModel
 
 
 @dataclass
-class EncoderConfig:
+class EncoderConfig(BaseModel):
     detent: SysexBool = field(
         default=SysexBool.FALSE,
         metadata={"addr": 10},
@@ -76,36 +77,3 @@ class EncoderConfig:
         default=MidiChannel.SHIFT,
         metadata={"addr": 24},
     )
-
-    def __post_init__(self):
-        """Ensure that all fields have the correct type."""
-        for f in fields(self):
-            value = getattr(self, f.name)
-            field_type = f.type
-            try:
-                if hasattr(field_type, "__origin__"):
-                    continue
-                if isinstance(field_type, type) and not isinstance(value, field_type):
-                    setattr(self, f.name, field_type(value))
-            except TypeError:
-                continue
-
-    def __setattr__(self, name, value):
-        """Ensure that fields have the correct type when set using dot notation."""
-        # Get the field if it exists
-        field_obj = next((f for f in fields(self) if f.name == name), None)
-
-        if field_obj is not None:
-            field_type = field_obj.type
-            try:
-                # Skip generic types
-                if hasattr(field_type, "__origin__"):
-                    pass
-                # Convert value to correct type if necessary
-                elif isinstance(field_type, type) and not isinstance(value, field_type):
-                    value = field_type(value)
-            except TypeError:
-                pass
-
-        # Call the default __setattr__ with potentially converted value
-        super().__setattr__(name, value)

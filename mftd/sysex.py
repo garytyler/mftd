@@ -22,6 +22,8 @@ class MftSysexApi:
     ) -> None:
         """Send the full :class:`DeviceConfig` to the device."""
 
+        config = config.to_device()
+
         def _int(value: int) -> int:
             if hasattr(value, "value"):
                 return int(value.value)
@@ -64,6 +66,7 @@ class MftSysexApi:
     ) -> None:
         """Send an `EncoderConfig` for a specific encoder."""
 
+        config = config.to_device()
         sysex_tag = encoder_index + 1
         params: List[int] = []
         for f in fields(config):
@@ -170,10 +173,10 @@ class MftSysexApi:
             unseen_names = [addr_to_name[addr] for addr in unseen_addrs]
             raise RuntimeError(f"Missing config values: {unseen_names}")
 
-        # Prepare arguments for DeviceConfig constructor
+        # Prepare arguments and build instance using BaseModel utility
         config_args = {addr_to_name[addr]: val for addr, val in config_values.items()}
 
-        return DeviceConfig(**config_args)
+        return DeviceConfig.from_device(config_args)
 
     @staticmethod
     def get_encoder_config(
@@ -217,17 +220,19 @@ class MftSysexApi:
             raise RuntimeError(
                 f"Failed to receive encoder config for encoder {encoder_index}"
             )
-        # Create EncoderConfig instance and populate from responses
         addr_to_name = {
             f.metadata["addr"]: f.name
             for f in fields(EncoderConfig)
             if "addr" in f.metadata
         }
-        cfg = EncoderConfig()
-        for addr, val in responses.items():
-            if addr in addr_to_name:
-                setattr(cfg, addr_to_name[addr], val)
-        return cfg
+
+        config_dict = {
+            addr_to_name[addr]: val
+            for addr, val in responses.items()
+            if addr in addr_to_name
+        }
+
+        return EncoderConfig.from_device(config_dict)
 
     @staticmethod
     def set_encoder_value(
