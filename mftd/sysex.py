@@ -63,7 +63,7 @@ class MftSysexApi:
         sysex_tag = encoder_index + 1
         params: List[int] = []
         for name, address in config.NAMES_TO_ADDRESSES.items():
-            value = config[name]
+            value = getattr(config, name)
             if value is None:
                 continue
             elif hasattr(value, "value"):
@@ -208,7 +208,8 @@ class MftSysexApi:
             raise RuntimeError(
                 f"Failed to receive encoder config for encoder {encoder_index}"
             )
-        cfg = EncoderConfig(encoder_index)
+        # Create EncoderConfig with default values, not with encoder_index
+        cfg = EncoderConfig()  # This is the fix - don't pass encoder_index here
         for name, address in cfg.NAMES_TO_ADDRESSES.items():
             if address in responses:
                 setattr(cfg, name, responses[address])
