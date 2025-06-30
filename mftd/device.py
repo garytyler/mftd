@@ -72,3 +72,23 @@ class DeviceConfig:
                     setattr(self, f.name, field_type(value))
             except TypeError:
                 continue
+
+    def __setattr__(self, name, value):
+        """Ensure that fields have the correct type when set using dot notation."""
+        # Get the field if it exists
+        field_obj = next((f for f in fields(self) if f.name == name), None)
+
+        if field_obj is not None:
+            field_type = field_obj.type
+            try:
+                # Skip generic types
+                if hasattr(field_type, "__origin__"):
+                    pass
+                # Convert value to correct type if necessary
+                elif isinstance(field_type, type) and not isinstance(value, field_type):
+                    value = field_type(value)
+            except TypeError:
+                pass
+
+        # Call the default __setattr__ with potentially converted value
+        super().__setattr__(name, value)
