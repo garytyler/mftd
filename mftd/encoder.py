@@ -81,5 +81,11 @@ class EncoderConfig:
         """Ensure that all fields have the correct type."""
         for f in fields(self):
             value = getattr(self, f.name)
-            if not isinstance(value, f.type):
-                setattr(self, f.name, f.type(value))
+            field_type = f.type
+            try:
+                if hasattr(field_type, "__origin__"):
+                    continue
+                if isinstance(field_type, type) and not isinstance(value, field_type):
+                    setattr(self, f.name, field_type(value))
+            except TypeError:
+                continue
