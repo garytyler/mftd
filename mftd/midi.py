@@ -14,14 +14,13 @@ class TdMidiOutput(MidiOutput):
     midi_out_chop_type = "midioutCHOP"
 
     def __init__(self, chop=None) -> None:
-        import td  # type: ignore
-
-        self.parent_op = op("/project1")
+        self.parent_op = op("/project1")  # type: ignore[name-defined]  # noqa: F821
         self.midi_out_chop = self.parent_op.op(self.midi_out_chop_name)
         if not self.midi_out_chop:
             self.midi_out_chop = self.parent_op.create(
                 self.midi_out_chop_type, self.midi_out_chop_name
             )
+        self.chop = chop or self.midi_out_chop
 
     def get_port_count(self) -> int:  # pragma: no cover - TD only
         return 1
@@ -98,14 +97,14 @@ def is_rtmidi_available() -> bool:
         # Test device creation to ensure rtmidi works
         rtmidi.MidiIn()
         return True
-    except (ImportError, RuntimeError):
+    except Exception:
         return False
 
 
 def is_td_available() -> bool:
     """Check if running in Touch Designer environment."""
     try:  # type: ignore
-        import td  # type: ignore
+        import td as _td  # type: ignore  # noqa: F401
 
         return True
     except ImportError:

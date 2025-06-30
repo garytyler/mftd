@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import fields, replace
+from dataclasses import dataclass, fields, replace
 from typing import Any, Callable, ClassVar, Mapping, Self, get_type_hints
 
 
+@dataclass(init=False)
 class BaseModel:
     """Common dataclass utilities for configuration models."""
 
@@ -22,7 +23,9 @@ class BaseModel:
             origin = getattr(field_type, "__origin__", None)
             if origin is not None:
                 return value
-            if isinstance(field_type, type) and not isinstance(value, field_type):
+            if isinstance(field_type, type) and not isinstance(
+                value, field_type
+            ):
                 return field_type(value)
         except TypeError:
             pass
@@ -33,7 +36,8 @@ class BaseModel:
         hints = get_type_hints(type(self))
         for f in fields(self):
             field_type = hints.get(f.name, f.type)
-            super().__setattr__(f.name, self._coerce(getattr(self, f.name), field_type))
+            value = getattr(self, f.name)
+            super().__setattr__(f.name, self._coerce(value, field_type))
 
     def __setattr__(self, name: str, value: Any) -> None:  # pragma: no cover
         """Coerce attribute ``value`` to its declared type if possible."""

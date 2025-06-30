@@ -1,5 +1,3 @@
-import pytest
-
 from mftd.device import DeviceConfig
 from mftd.constants import MidiChannel, SysexBool, SideSwitchAction
 
