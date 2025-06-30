@@ -1,22 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, asdict
-from typing import Any, get_type_hints, TypeVar
+from typing import Any, get_type_hints, TypeVar, Self
 
 T = TypeVar("T", bound="BaseModel")
+O = TypeVar("O", bound="BaseModelOut")
+I = TypeVar("I", bound="BaseModelIn")
 
 
 @dataclass
 class _BaseModel:
     """Common dataclass utilities for configuration models."""
-
-    # # Mapping of field name to callable used when constructing an instance from
-    # # device data.
-    # _inbound_transforms: ClassVar[Mapping[str, Callable[[Any], Any]]] = {}
-    #
-    # # Mapping of field name to callable used when preparing an instance for
-    # # transmission to the device.
-    # _outbound_transforms: ClassVar[Mapping[str, Callable[[Any], Any]]] = {}
 
     @staticmethod
     def _coerce(value: Any, field_type: Any) -> Any:
@@ -41,7 +35,7 @@ class _BaseModel:
 
     def __setattr__(self, name: str, value: Any) -> None:  # pragma: no cover
         """Coerce attribute ``value`` to its declared type if possible."""
-        field_obj = next((f for f in fields(self) if f.name == name), None)
+        field_obj = getattr(self, "__dataclass_fields__").get(name)
         if field_obj is not None:
             hints = get_type_hints(type(self))
             field_type = hints.get(field_obj.name, field_obj.type)
@@ -62,12 +56,14 @@ class BaseModelOut(_BaseModel):
     def __post_init__(self) -> None:  # pragma: no cover - executed implicitly
         pass
 
+    @classmethod
+    def from_config(cls, config: T) -> Self:
+        return cls(**asdict(config))
+
 
 @dataclass
 class BaseModel(_BaseModel):
-    def to_outgoing(self) -> BaseModelOut:
-        return BaseModelOut(**asdict(self))
 
     @classmethod
-    def from_incoming(cls, incoming: BaseModelIn) -> BaseModel:
+    def from_incoming(cls, incoming: I) -> Self:
         return cls(**asdict(incoming))

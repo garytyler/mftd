@@ -7,7 +7,7 @@ from dataclasses import fields
 from typing import Iterable, Optional, List
 
 from . import constants
-from .device import DeviceConfig
+from .device import DeviceConfig, DeviceConfigIn
 from .encoder import EncoderConfig
 from .protocol import MidiOutput, MidiInput
 
@@ -21,8 +21,6 @@ class MftSysexApi:
         config: DeviceConfig,
     ) -> None:
         """Send the full :class:`DeviceConfig` to the device."""
-
-        config = config.to_device()
 
         def _int(value: int) -> int:
             if hasattr(value, "value"):
@@ -66,7 +64,6 @@ class MftSysexApi:
     ) -> None:
         """Send an `EncoderConfig` for a specific encoder."""
 
-        config = config.to_device()
         sysex_tag = encoder_index + 1
         params: List[int] = []
         for f in fields(config):
@@ -176,7 +173,7 @@ class MftSysexApi:
         # Prepare arguments and build instance using BaseModel utility
         config_args = {addr_to_name[addr]: val for addr, val in config_values.items()}
 
-        return DeviceConfig.from_device(config_args)
+        return DeviceConfig.from_incoming(DeviceConfigIn(**config_args))
 
     @staticmethod
     def get_encoder_config(
