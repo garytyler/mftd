@@ -229,17 +229,6 @@ class MftSysexApi:
                 setattr(cfg, addr_to_name[addr], val)
         return cfg
 
-    # @staticmethod
-    # def set_encoder_value(
-    #     midi_out: MidiOutput,
-    #     encoder_index: int,
-    #     value: int,
-    #     channel: int = constants.MidiChannel.ROTARY_ENCODER,
-    # ) -> None:
-    #     """Send a control change with the specified value."""
-    #     message = [0xB0 + channel, encoder_index, value]
-    #     MftSysexApi._send_midi(midi_out, message)
-
     @staticmethod
     def set_encoder_value(
         midi_out: MidiOutput,
@@ -261,6 +250,45 @@ class MftSysexApi:
         status = 0xB0 | (channel & 0x0F)
         message = [status, encoder_index, value]
         MftSysexApi._send_midi(midi_out, message)
+
+    @staticmethod
+    def get_encoder_value(
+        midi_out: MidiOutput,
+        midi_in: MidiInput,
+        encoder_index: int,
+        channel: int = constants.MidiChannel.ROTARY_ENCODER,
+        timeout: float = 1.0,
+    ) -> Optional[int]:
+        """Wait for and return a control change value for the encoder.
+
+        Parameters
+        ----------
+        midi_in : MidiInput
+            Input device to read MIDI messages from.
+        encoder_index : int
+            The encoder (Control Change number) to listen for.
+        channel : int, optional
+            MIDI channel to listen on, by default ``MidiChannel.ROTARY_ENCODER``.
+        timeout : float, optional
+            Maximum time in seconds to wait for the message. ``1.0`` by default.
+
+        Returns
+        -------
+        Optional[int]
+            The value of the control change if received within the timeout,
+            otherwise ``None``.
+        """
+
+        if not 0 <= channel <= 15:
+            raise ValueError("channel must be in range 0-15")
+
+        if not 0 <= encoder_index < constants.Encoders.DEVICE_KNOB_MAX:
+            raise ValueError("encoder_index must be in range 0-63")
+
+        MftSysexApi.set_encoder_value(
+            midi_out, encoder_index, constants.MidiChannel.ROTARY_ENCODER
+        )
+        return MftSysexApi._receive_cc(midi_in, channel, encoder_index, timeout)
 
     # Private helper functions -------------------------------------------------
     @staticmethod

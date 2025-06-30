@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from mftd.constants import MidiChannel
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
 from mftd.midi import (
@@ -60,7 +61,13 @@ class MidiFighterTwister:
             midi_in=self.midi_input,
         )
 
-    def get_encoder_config(self, encoder_index) -> EncoderConfig:
+    def set_encoder_value(
+        self,
+        *,
+        encoder_index,
+        value: int,
+        channel: MidiChannel = MidiChannel.ROTARY_ENCODER,
+    ):
         """Request and return the current encoder configuration."""
         if not self.midi_output or not self.midi_input:
             if is_td_available():
@@ -71,23 +78,12 @@ class MidiFighterTwister:
                 raise RuntimeError("MIDI output is not available.")
             elif not self.midi_input:
                 raise RuntimeError("MIDI input is not available.")
-        return MftSysexApi.get_encoder_config(
+        return MftSysexApi.set_encoder_value(
             midi_out=self.midi_output,
-            midi_in=self.midi_input,
             encoder_index=encoder_index,
+            value=value,
+            channel=channel,
         )
-
-    def set_encoder_value(self, encoder_index, value: int):
-        """Request and return the current encoder configuration."""
-        if not self.midi_output or not self.midi_input:
-            if is_td_available():
-                raise RuntimeError(
-                    "get_encoder_config() is not supported in TouchDesigner."
-                )
-            elif not self.midi_output:
-                raise RuntimeError("MIDI output is not available.")
-            elif not self.midi_input:
-                raise RuntimeError("MIDI input is not available.")
 
     def close(self):
         if hasattr(self, "midi_input"):

@@ -125,3 +125,31 @@ def test_get_encoder_config(rtmidi_stub):
 
     assert cfg.active_color == consts.ColorValue.BLUE
     assert cfg.detent_color == consts.DetentColorValue.RED
+
+
+def test_set_encoder_value_sends_correct_cc(rtmidi_stub):
+    """
+    Verify that `set_encoder_value` emits the expected three-byte MIDI
+    Control-Change message.
+
+    A minimal stub is used in place of a real MIDI-output port so that the
+    test remains fast, deterministic and free from external dependencies.
+    """
+
+    # Given
+    encoder_index = 10  # a valid encoder (0-63)
+    value = 64  # an arbitrary value (0-127)
+    channel = 2  # an arbitrary MIDI channel (0-15)
+    midi_out = rtmidi_stub.MidiOut()
+
+    # When
+    MftSysexApi.set_encoder_value(midi_out, encoder_index, value, channel)
+
+    # Then
+    expected_status = 0xB0 | (channel & 0x0F)
+    expected = [expected_status, encoder_index, value]
+
+    assert midi_out.messages == [expected], (
+        "The Control-Change message sent to the MIDI out-port does not match "
+        "what the API is expected to emit."
+    )
