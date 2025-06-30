@@ -1,3 +1,5 @@
+from dataclasses import fields
+
 from mftd import MftSysexApi, constants, EncoderConfig, DeviceConfig
 from mftd.constants import SideSwitchAction, MidiChannel, SysexBool
 
@@ -28,6 +30,11 @@ def test_get_global_config(rtmidi_stub):
     consts = constants
 
     response_values = []
+    name_to_addr = {
+        f.name: f.metadata["addr"]
+        for f in fields(DeviceConfig)
+        if "addr" in f.metadata
+    }
     for key, val in {
         "system_midi_channel": int(MidiChannel.ROTARY_ENCODER),
         "super_knob_start": 40,
@@ -42,7 +49,7 @@ def test_get_global_config(rtmidi_stub):
         "right_button_2_function": int(SideSwitchAction.NOTE_HOLD),
         "right_button_3_function": int(SideSwitchAction.SHIFT_PAGE1),
     }.items():
-        response_values.extend([DeviceConfig.NAMES_TO_ADDRESSES[key], val])
+        response_values.extend([name_to_addr[key], val])
 
     # Format response exactly like the real device
     resp = [
@@ -85,7 +92,12 @@ def test_get_encoder_config(rtmidi_stub):
     consts = constants
 
     # Find the address for encoder_midi_number in EncoderConfig
-    encoder_midi_number_addr = EncoderConfig.NAMES_TO_ADDRESSES["encoder_midi_number"]
+    name_to_addr = {
+        f.name: f.metadata["addr"]
+        for f in fields(EncoderConfig)
+        if "addr" in f.metadata
+    }
+    encoder_midi_number_addr = name_to_addr["encoder_midi_number"]
 
     resp = [
         0xF0,
