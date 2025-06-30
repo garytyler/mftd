@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from mftd import MftSysexApi
+from mftd.api import MftSysexApi
 from mftd.midi import (
     create_midi_input,
     create_midi_output,

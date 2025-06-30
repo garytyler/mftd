@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import field, dataclass, fields
 
 from .constants import (

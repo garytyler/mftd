@@ -1,5 +1,5 @@
-from mftd import DeviceConfig
 from mftd.constants import MidiChannel, SysexBool
+from mftd.device import DeviceConfig
 
 
 def test_device_config_defaults():

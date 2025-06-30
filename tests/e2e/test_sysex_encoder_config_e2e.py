@@ -3,7 +3,8 @@ from copy import deepcopy
 
 import pytest
 
-from mftd import constants, MftSysexApi
+from mftd import constants
+from mftd.api import MftSysexApi
 
 
 @pytest.fixture

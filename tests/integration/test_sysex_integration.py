@@ -1,7 +1,10 @@
 from dataclasses import fields
 
-from mftd import MftSysexApi, constants, EncoderConfig, DeviceConfig
+from mftd import constants
+from mftd.api import MftSysexApi
 from mftd.constants import SideSwitchAction, MidiChannel, SysexBool
+from mftd.device import DeviceConfig
+from mftd.encoder import EncoderConfig
 
 
 def test_set_global_config(rtmidi_stub):
@@ -31,9 +34,7 @@ def test_get_global_config(rtmidi_stub):
 
     response_values = []
     name_to_addr = {
-        f.name: f.metadata["addr"]
-        for f in fields(DeviceConfig)
-        if "addr" in f.metadata
+        f.name: f.metadata["addr"] for f in fields(DeviceConfig) if "addr" in f.metadata
     }
     for key, val in {
         "system_midi_channel": int(MidiChannel.ROTARY_ENCODER),
