@@ -77,6 +77,18 @@ class MidiFighterTwister:
             encoder_index=encoder_index,
         )
 
+    def set_encoder_value(self, encoder_index, value: int):
+        """Request and return the current encoder configuration."""
+        if not self.midi_output or not self.midi_input:
+            if is_td_available():
+                raise RuntimeError(
+                    "get_encoder_config() is not supported in TouchDesigner."
+                )
+            elif not self.midi_output:
+                raise RuntimeError("MIDI output is not available.")
+            elif not self.midi_input:
+                raise RuntimeError("MIDI input is not available.")
+
     def close(self):
         if hasattr(self, "midi_input"):
             self.midi_input.close_port()

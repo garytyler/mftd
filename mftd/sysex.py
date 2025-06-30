@@ -229,6 +229,39 @@ class MftSysexApi:
                 setattr(cfg, addr_to_name[addr], val)
         return cfg
 
+    # @staticmethod
+    # def set_encoder_value(
+    #     midi_out: MidiOutput,
+    #     encoder_index: int,
+    #     value: int,
+    #     channel: int = constants.MidiChannel.ROTARY_ENCODER,
+    # ) -> None:
+    #     """Send a control change with the specified value."""
+    #     message = [0xB0 + channel, encoder_index, value]
+    #     MftSysexApi._send_midi(midi_out, message)
+
+    @staticmethod
+    def set_encoder_value(
+        midi_out: MidiOutput,
+        encoder_index: int,
+        value: int,
+        channel: int = constants.MidiChannel.ROTARY_ENCODER,
+    ) -> None:
+        """Send a control change with the specified value."""
+
+        if not 0 <= channel <= 15:
+            raise ValueError("channel must be in range 0-15")
+
+        if not 0 <= encoder_index < constants.Encoders.DEVICE_KNOB_MAX:
+            raise ValueError("encoder_index must be in range 0-63")
+
+        if not 0 <= value <= 127:
+            raise ValueError("value must be in range 0-127")
+
+        status = 0xB0 | (channel & 0x0F)
+        message = [status, encoder_index, value]
+        MftSysexApi._send_midi(midi_out, message)
+
     # Private helper functions -------------------------------------------------
     @staticmethod
     def _send_sysex(midi_out: MidiOutput, data: Iterable[int]) -> None:
