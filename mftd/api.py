@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
-
 from mftd.midi import (
     create_midi_input,
     create_midi_output,
-    MidiInput,
-    MidiOutput,
     is_td_available,
 )
 from mftd.sysex import MftSysexApi
@@ -27,13 +24,15 @@ class MftApi:
             config=device_config,
         )
 
-    def set_encoder_config(self, encoder_config: EncoderConfig) -> None:
+    def set_encoder_config(
+        self, encoder_index: int, encoder_config: EncoderConfig
+    ) -> None:
         """Send the full encoder configuration to the MIDI encoder."""
         if not self.midi_output:
             raise RuntimeError("MIDI output is not available.")
         MftSysexApi.set_encoder_config(
             midi_out=self.midi_output,
-            encoder_index=encoder_config.midi_number,
+            encoder_index=encoder_index,
             config=encoder_config,
         )
 

@@ -40,5 +40,6 @@ def test_get_set_encoder_config_e2e(
     time.sleep(0.5)
 
     result_config = MftSysexApi.get_encoder_config(midi_out, midi_in, encoder_index)
+    assert result_config is not None
     assert result_config.active_color == new_color  # Check for the expected new color
     assert result_config.active_color != old_config.active_color  # Ensure it changed
