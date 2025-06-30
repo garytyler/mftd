@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import field, dataclass
 
+from .base import BaseModel, BaseModelOut, BaseModelIn
 from .constants import MidiChannel, SysexBool, SideSwitchAction
-from .base import BaseModel
 
 
 @dataclass
@@ -56,3 +56,13 @@ class DeviceConfig(BaseModel):
         default=127,
         metadata={"addr": 32},
     )
+
+
+@dataclass
+class DeviceConfigOut(DeviceConfig, BaseModelOut):
+    pass
+
+
+@dataclass
+class DeviceConfigIn(DeviceConfig, BaseModelIn):
+    pass
