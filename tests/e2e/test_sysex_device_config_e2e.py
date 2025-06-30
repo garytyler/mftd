@@ -4,19 +4,18 @@ import pytest
 
 from mftd.constants import MidiChannel, SysexBool, SideSwitchAction
 from mftd.device import DeviceConfig
-from mftd.sysex import MftSysexApi
 
 
 @pytest.fixture
-def old_config(midi_out):
+def old_config(mft):
     config_1 = DeviceConfig()
-    MftSysexApi.set_device_config(midi_out, config_1)
+    mft.set_device_config(config_1)
     time.sleep(0.5)
     yield config_1
 
 
 @pytest.fixture
-def new_config(midi_out, old_config):
+def new_config(mft, old_config):
     new_config = DeviceConfig(
         system_midi_channel=MidiChannel.SHIFT,
         bank_side_buttons=SysexBool.FALSE,
@@ -31,7 +30,7 @@ def new_config(midi_out, old_config):
         rgb_led_brightness=60,
         indicator_global_brightness=127,
     )
-    MftSysexApi.set_device_config(midi_out, new_config)
+    mft.set_device_config(new_config)
     time.sleep(0.5)
     yield new_config
 
@@ -40,10 +39,8 @@ def test_device_config_updates(old_config, new_config):
     assert old_config != new_config
 
 
-def test_updated_device_config_values(
-    midi_out, midi_in, old_config, new_config
-) -> None:
-    result_config = MftSysexApi.get_device_config(midi_out, midi_in)
+def test_updated_device_config_values(mft, old_config, new_config) -> None:
+    result_config = mft.get_device_config()
     assert result_config is not None
     assert result_config.bank_side_buttons == new_config.bank_side_buttons
     assert result_config.left_button_1_function == new_config.left_button_1_function

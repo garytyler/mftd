@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
 from mftd.midi import (
@@ -7,13 +9,19 @@ from mftd.midi import (
     create_midi_output,
     is_td_available,
 )
+from mftd.protocol import MidiInput, MidiOutput
 from mftd.sysex import MftSysexApi
 
 
-class MftApi:
-    def __init__(self) -> None:
-        self.midi_input = create_midi_input()
-        self.midi_output = create_midi_output()
+class MidiFighterTwister:
+    def __init__(
+        self,
+        *,
+        midi_in: Optional[MidiInput] = None,
+        midi_out: Optional[MidiOutput] = None,
+    ) -> None:
+        self.midi_input = midi_in or create_midi_input()
+        self.midi_output = midi_out or create_midi_output()
 
     def set_device_config(self, device_config: DeviceConfig) -> None:
         """Send the full device configuration to the MIDI device."""

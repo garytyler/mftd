@@ -4,7 +4,6 @@ from copy import deepcopy
 import pytest
 
 from mftd import constants
-from mftd.api import MftSysexApi
 
 
 @pytest.fixture
@@ -14,16 +13,14 @@ def encoder_index():
 
 
 @pytest.fixture
-def encoder_config(midi_out, midi_in, encoder_index):
-    encoder_config = MftSysexApi.get_encoder_config(midi_out, midi_in, encoder_index)
+def encoder_config(mft, encoder_index):
+    encoder_config = mft.get_encoder_config(encoder_index)
     yield encoder_config
-    MftSysexApi.set_encoder_config(midi_out, encoder_index, encoder_config)
+    mft.set_encoder_config(encoder_index, encoder_config)
     time.sleep(0.5)
 
 
-def test_get_set_encoder_config_e2e(
-    midi_out, midi_in, encoder_config, encoder_index
-) -> None:
+def test_get_set_encoder_config_e2e(mft, encoder_config, encoder_index) -> None:
 
     old_config = encoder_config
 
@@ -38,10 +35,10 @@ def test_get_set_encoder_config_e2e(
     new_config = deepcopy(old_config)
     new_config.active_color = new_color
 
-    MftSysexApi.set_encoder_config(midi_out, encoder_index, new_config)
+    mft.set_encoder_config(encoder_index, new_config)
     time.sleep(0.5)
 
-    result_config = MftSysexApi.get_encoder_config(midi_out, midi_in, encoder_index)
+    result_config = mft.get_encoder_config(encoder_index)
     assert result_config is not None
     assert result_config.active_color == new_color  # Check for the expected new color
     assert result_config.active_color != old_config.active_color  # Ensure it changed

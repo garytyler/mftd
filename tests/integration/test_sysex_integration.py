@@ -1,10 +1,10 @@
 from dataclasses import fields
 
 from mftd import constants
-from mftd.api import MftSysexApi
 from mftd.constants import SideSwitchAction, MidiChannel, SysexBool
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
+from mftd.mft import MftSysexApi
 
 
 def test_set_global_config(rtmidi_stub):

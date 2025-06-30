@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from mftd.api import MftSysexApi
+from mftd.mft import MftSysexApi, MidiFighterTwister
 from mftd.midi import (
     create_midi_input,
     create_midi_output,
@@ -33,9 +33,14 @@ def midi_out():
     midi_out.close_port()
 
 
+@pytest.fixture
+def mft(midi_out, midi_in):
+    yield MidiFighterTwister(midi_out=midi_out, midi_in=midi_in)
+
+
 @pytest.fixture(scope="session")
-def device_config(midi_out, midi_in):
-    device_config = MftSysexApi.get_device_config(midi_out, midi_in)
+def device_config(mft):
+    device_config = mft.get_device_config()
     yield device_config
-    MftSysexApi.set_device_config(midi_out, device_config)
+    MftSysexApi.set_device_config(device_config)
     time.sleep(0.5)
