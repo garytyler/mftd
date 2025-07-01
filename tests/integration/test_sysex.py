@@ -10,10 +10,11 @@ from mftd.mft import MftSysexApi
 def test_set_global_config(rtmidi_stub):
     api = MftSysexApi
     out = rtmidi_stub.MidiOut()
-    cfg = DeviceConfig()
-    cfg.rgb_led_brightness = 88
+    device_config = DeviceConfig()
+    device_config.rgb_led_brightness = 88
+    data = device_config.to_out_dict()
 
-    api.set_device_config(out, cfg)
+    api.set_device_config(out, data)
 
     assert out.messages
     # The configuration may be sent in multiple SysEx chunks
@@ -65,7 +66,8 @@ def test_get_global_config(rtmidi_stub):
     ]
     inp.messages.append((resp, 0))  # Use timestamp 0 instead of None
 
-    cfg = api.get_device_config(out, inp)
+    resp = api.get_device_config(out, inp)
+    cfg = DeviceConfig.from_in_dict(resp)
 
     assert cfg.rgb_led_brightness == 99
     out_msg = out.messages[-1]
@@ -75,10 +77,11 @@ def test_get_global_config(rtmidi_stub):
 def test_set_encoder_config(rtmidi_stub):
     api = MftSysexApi
     out = rtmidi_stub.MidiOut()
-    cfg = EncoderConfig(0)
+    cfg = EncoderConfig()
     cfg.active_color = constants.ColorValue.RED
 
-    api.set_encoder_config(out, 0, cfg)
+    out_data = cfg.to_out_dict()
+    api.set_encoder_config(out, 0, out_data)
 
     assert out.messages[0][0] == 0xF0
     assert out.messages[0][4] == constants.SysexCommands.BULK_XFER
@@ -121,10 +124,11 @@ def test_get_encoder_config(rtmidi_stub):
     ]
     inp.messages.append((resp, None))
 
-    cfg = api.get_encoder_config(out, inp, 0)
-
+    in_data = api.get_encoder_config(out, inp, 0)
+    cfg = EncoderConfig.from_in_dict(in_data)
     assert cfg.active_color == consts.ColorValue.BLUE
     assert cfg.detent_color == consts.DetentColorValue.RED
+    print(DeviceConfig()._addrs_to_names)
 
 
 def test_set_encoder_value_sends_correct_cc(rtmidi_stub):

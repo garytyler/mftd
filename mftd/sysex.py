@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import time
 from dataclasses import fields
-from typing import Iterable, Optional, List
+from typing import Iterable, Optional, List, Dict
 
 from . import constants
 from .device import DeviceConfig
-from .encoder import EncoderConfig
 from .protocol import MidiOutput, MidiInput
 
 
@@ -18,10 +17,8 @@ class MftSysexApi:
     @staticmethod
     def set_device_config(
         midi_out: MidiOutput,
-        config: DeviceConfig,
+        data: Dict[int, int],
     ) -> None:
-
-        out_data = config.to_out_dict()
 
         def _int(value: int) -> int:
             if hasattr(value, "value"):
@@ -30,7 +27,7 @@ class MftSysexApi:
 
         pairs: list[int] = []
 
-        for addr, val in out_data.items():
+        for addr, val in data.items():
             if val is not None:
                 pairs.extend([addr, _int(val)])
 
@@ -57,15 +54,13 @@ class MftSysexApi:
     def set_encoder_config(
         midi_out: MidiOutput,
         encoder_index: int,
-        config: EncoderConfig,
+        data: Dict[int, int],
     ) -> None:
-
-        out_data = config.to_out_dict()
 
         sysex_tag = encoder_index + 1
 
         params: List[int] = []
-        for address, value in out_data.items():
+        for address, value in data.items():
             if value is None:
                 continue
             elif hasattr(value, "value"):
@@ -116,7 +111,7 @@ class MftSysexApi:
         midi_out: MidiOutput,
         midi_in: MidiInput,
         timeout: float = 1.0,
-    ) -> DeviceConfig | None:
+    ) -> Dict[int, int] | None:
         request = [
             0xF0,
             constants.MIDI_MFR_ID_0,
@@ -164,7 +159,7 @@ class MftSysexApi:
             unseen_names = [addr_to_name[addr] for addr in unseen_addrs]
             raise RuntimeError(f"Missing config values: {unseen_names}")
 
-        return DeviceConfig.from_in_dict(config_values)
+        return config_values
 
     @staticmethod
     def get_encoder_config(
@@ -172,7 +167,7 @@ class MftSysexApi:
         midi_in: MidiInput,
         encoder_index: int,
         timeout: float = 1.0,
-    ) -> EncoderConfig:
+    ) -> Dict[int, int]:
         sysex_tag = encoder_index + 1
         request = [
             0xF0,
@@ -208,7 +203,7 @@ class MftSysexApi:
                 f"Failed to receive encoder config for encoder {encoder_index}"
             )
 
-        return EncoderConfig.from_in_dict(responses)
+        return responses
 
     @staticmethod
     def set_encoder_value(

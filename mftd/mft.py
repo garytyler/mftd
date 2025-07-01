@@ -15,6 +15,8 @@ from mftd.sysex import MftSysexApi
 
 
 class MidiFighterTwister:
+    api = MftSysexApi
+
     def __init__(
         self,
         *,
@@ -31,9 +33,9 @@ class MidiFighterTwister:
         """Send the full device configuration to the MIDI device."""
         if not self.midi_output:
             raise RuntimeError("MIDI output is not available.")
-        MftSysexApi.set_device_config(
+        self.api.set_device_config(
             midi_out=self.midi_output,
-            config=device_config,
+            data=device_config.to_out_dict(),
         )
 
     def set_encoder_config(
@@ -44,10 +46,10 @@ class MidiFighterTwister:
         """Send the full encoder configuration to the MIDI encoder."""
         if not self.midi_output:
             raise RuntimeError("MIDI output is not available.")
-        return MftSysexApi.set_encoder_config(
+        return self.api.set_encoder_config(
             midi_out=self.midi_output,
             encoder_index=encoder_index,
-            config=encoder_config,
+            data=encoder_config.to_out_dict(),
         )
 
     def get_device_config(
@@ -63,10 +65,11 @@ class MidiFighterTwister:
                 raise RuntimeError("MIDI output is not available.")
             elif not self.midi_input:
                 raise RuntimeError("MIDI input is not available.")
-        return MftSysexApi.get_device_config(
+        resp = self.api.get_device_config(
             midi_out=self.midi_output,
             midi_in=self.midi_input,
         )
+        return DeviceConfig.from_in_dict(resp)
 
     def get_encoder_config(
         self,
@@ -82,11 +85,12 @@ class MidiFighterTwister:
                 raise RuntimeError("MIDI output is not available.")
             elif not self.midi_input:
                 raise RuntimeError("MIDI input is not available.")
-        return MftSysexApi.get_encoder_config(
+        resp = self.api.get_encoder_config(
             midi_out=self.midi_output,
             midi_in=self.midi_input,
             encoder_index=encoder_index,
         )
+        return EncoderConfig.from_in_dict(resp)
 
     def set_encoder_value(
         self,
@@ -104,7 +108,7 @@ class MidiFighterTwister:
                 raise RuntimeError("MIDI output is not available.")
             elif not self.midi_input:
                 raise RuntimeError("MIDI input is not available.")
-        return MftSysexApi.set_encoder_value(
+        return self.api.set_encoder_value(
             midi_out=self.midi_output,
             encoder_index=encoder_index,
             value=value,

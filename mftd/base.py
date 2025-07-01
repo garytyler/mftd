@@ -2,16 +2,30 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 from enum import IntEnum
-from typing import Any, get_type_hints, TypeVar, Self, Dict
+from typing import Any, get_type_hints, Self, Dict
 
-T = TypeVar("T", bound="BaseModel")
-O = TypeVar("O", bound="BaseModelOut")
-I = TypeVar("I", bound="BaseModelIn")
+from mftd.util import cached_classproperty
 
 
 @dataclass
 class BaseModel:
     """Common dataclass utilities for configuration models."""
+
+    @classmethod
+    @cached_classproperty
+    def _addrs_to_names(cls):
+        result = {}
+        for f in fields(cls):
+            try:
+                addr = f.metadata["addr"]
+            except KeyError:
+                continue
+            else:
+                result[f.name] = addr
+        return result
+
+    def addr_to_name(self, addr: int) -> str:
+        return self._addrs_to_names[addr]
 
     @staticmethod
     def _coerce(value: Any, field_type: Any) -> Any:
@@ -40,7 +54,7 @@ class BaseModel:
         return value
 
     @classmethod
-    def from_in_dict(cls, data) -> Self:
+    def from_in_dict(cls, data: Dict[int, int]) -> Self:
         kwargs = {}
         for field in fields(cls):
             try:
@@ -60,7 +74,7 @@ class BaseModel:
     def transform_outgoing(self, name: str, value: int | IntEnum) -> int | IntEnum:
         return value
 
-    def to_out_dict(self) -> Dict[str, int]:
+    def to_out_dict(self) -> Dict[int, int]:
         result = {}
         for field in fields(self):
             field_addr = field.metadata.get("addr")
@@ -69,32 +83,3 @@ class BaseModel:
             value = getattr(self, field.name)
             result[field_addr] = self.transform_outgoing(field.name, int(value))
         return result
-
-
-# @dataclass
-# class BaseModelIn(_BaseModel):
-#     pass
-#
-#
-# @dataclass
-# class BaseModelOut(_BaseModel):
-#     pass
-#
-#
-# @dataclass
-# class BaseModel(_BaseModel, Generic[O]):
-#     pass
-#
-#     @dataclass
-#     def from_addr_dict(cls, data) -> Self:
-#         return cls(**data)
-#
-#     def to_addr_dict(self):
-#         result = {}
-#         for field in fields(self):
-#             field_addr = field.metadata.get("addr")
-#             if field_addr is None:
-#                 continue
-#             value = getattr(self, field.name)
-#             result[field_addr] = value
-#         return result
