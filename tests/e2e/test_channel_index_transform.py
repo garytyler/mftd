@@ -4,7 +4,7 @@ from mftd.constants import MidiChannel
 from mftd.device import DeviceConfig
 
 
-def test_device_channel_index(
+def test_device_channel_transform(
     mft,
 ) -> None:
 
@@ -25,10 +25,12 @@ def test_device_channel_index(
 def test_encoder_channel_transform(
     mft,
 ) -> None:
+    device_config = DeviceConfig()
     encoder_index = 3
     encoder_config_1 = mft.get_encoder_config(encoder_index)
     encoder_config_1.encoder_midi_channel = MidiChannel.ROTARY_ENCODER
     mft.set_encoder_config(encoder_index, encoder_config_1)
+    mft.set_device_config(device_config)  # Ensure device returns to operating state
     encoder_config_2 = mft.get_encoder_config(encoder_index)
     assert (
         encoder_config_2.encoder_midi_channel == encoder_config_1.encoder_midi_channel

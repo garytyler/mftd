@@ -1,7 +1,6 @@
-import time
-
 import pytest
 
+from mftd.device import DeviceConfig
 from mftd.mft import MftSysexApi, MidiFighterTwister
 from mftd.midi import (
     create_midi_input,
@@ -9,7 +8,7 @@ from mftd.midi import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def midi_in():
     """Create a real MIDI input device."""
     midi_in = create_midi_input()
@@ -21,7 +20,7 @@ def midi_in():
     midi_in.close_port()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def midi_out():
     """Create a real MIDI output device."""
     midi_out = create_midi_output()
@@ -33,14 +32,17 @@ def midi_out():
     midi_out.close_port()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def mft(midi_out, midi_in):
     yield MidiFighterTwister(midi_out=midi_out, midi_in=midi_in)
 
 
-@pytest.fixture(scope="session")
-def device_config(mft):
-    device_config = mft.get_device_config()
+@pytest.fixture(scope="session", autouse=True)
+def device_config(midi_out, midi_in, mft):
+    device_config_in_data = MftSysexApi.get_device_config(midi_out, midi_in)
+    if not device_config_in_data:
+        RuntimeError("Failed to get device config")
+    device_config = DeviceConfig.from_in_dict(device_config_in_data)
     yield device_config
-    MftSysexApi.set_device_config(device_config)
-    time.sleep(0.5)
+    out_data = device_config.to_out_dict()
+    MftSysexApi.set_device_config(midi_out, out_data)
