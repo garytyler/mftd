@@ -21,7 +21,6 @@ def encoder_config(mft, encoder_index):
 
 
 def test_get_set_encoder_config_e2e(mft, encoder_config, encoder_index) -> None:
-
     old_config = encoder_config
 
     # Ensure we pick a different color value
