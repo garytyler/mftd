@@ -12,7 +12,7 @@ from mftd.constants import (
     DetentColorValue,
     EncoderIndicatorDisplayType,
 )
-from .base import BaseModel
+from .base import BaseModel, BaseModelOut, BaseModelIn
 
 
 @dataclass
@@ -77,3 +77,13 @@ class EncoderConfig(BaseModel):
         default=MidiChannel.SHIFT,
         metadata={"addr": 24},
     )
+
+
+@dataclass
+class EncoderConfigOut(EncoderConfig, BaseModelOut):
+    pass
+
+
+@dataclass
+class EncoderConfigIn(EncoderConfig, BaseModelIn):
+    pass

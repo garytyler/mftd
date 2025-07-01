@@ -44,17 +44,15 @@ class _BaseModel:
 
 
 @dataclass
-class BaseModelIn(_BaseModel):
+class BaseModel(_BaseModel):
 
-    def __post_init__(self) -> None:  # pragma: no cover - executed implicitly
-        pass
+    @classmethod
+    def from_incoming(cls, incoming: I) -> Self:
+        return cls(**asdict(incoming))
 
 
 @dataclass
 class BaseModelOut(_BaseModel):
-
-    def __post_init__(self) -> None:  # pragma: no cover - executed implicitly
-        pass
 
     @classmethod
     def from_config(cls, config: T) -> Self:
@@ -62,8 +60,5 @@ class BaseModelOut(_BaseModel):
 
 
 @dataclass
-class BaseModel(_BaseModel):
-
-    @classmethod
-    def from_incoming(cls, incoming: I) -> Self:
-        return cls(**asdict(incoming))
+class BaseModelIn(_BaseModel):
+    pass

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import time
-from dataclasses import fields
+from dataclasses import fields, asdict
 from typing import Iterable, Optional, List
 
 from . import constants
 from .device import DeviceConfig, DeviceConfigIn
-from .encoder import EncoderConfig
+from .encoder import EncoderConfig, EncoderConfigIn
 from .protocol import MidiOutput, MidiInput
 
 
@@ -20,7 +20,8 @@ class MftSysexApi:
         midi_out: MidiOutput,
         config: DeviceConfig,
     ) -> None:
-        """Send the full :class:`DeviceConfig` to the device."""
+
+        config_out = DeviceConfigIn(**asdict(config))
 
         def _int(value: int) -> int:
             if hasattr(value, "value"):
@@ -29,11 +30,11 @@ class MftSysexApi:
 
         pairs: list[int] = []
 
-        for f in fields(config):
+        for f in fields(config_out):
             if "addr" not in f.metadata:
                 continue
             addr = f.metadata["addr"]
-            val = getattr(config, f.name)
+            val = getattr(config_out, f.name)
             if val is not None:
                 pairs.extend([addr, _int(val)])
 
@@ -62,15 +63,16 @@ class MftSysexApi:
         encoder_index: int,
         config: EncoderConfig,
     ) -> None:
-        """Send an `EncoderConfig` for a specific encoder."""
+
+        config_out = EncoderConfigIn(**asdict(config))
 
         sysex_tag = encoder_index + 1
         params: List[int] = []
-        for f in fields(config):
+        for f in fields(config_out):
             if "addr" not in f.metadata:
                 continue
             address = f.metadata["addr"]
-            value = getattr(config, f.name)
+            value = getattr(config_out, f.name)
             if value is None:
                 continue
             elif hasattr(value, "value"):
@@ -122,7 +124,6 @@ class MftSysexApi:
         midi_in: MidiInput,
         timeout: float = 1.0,
     ) -> DeviceConfig | None:
-        """Request and return the current :class:`DeviceConfig`."""
         request = [
             0xF0,
             constants.MIDI_MFR_ID_0,
@@ -173,7 +174,9 @@ class MftSysexApi:
         # Prepare arguments and build instance using BaseModel utility
         config_args = {addr_to_name[addr]: val for addr, val in config_values.items()}
 
-        return DeviceConfig.from_incoming(DeviceConfigIn(**config_args))
+        config_in = DeviceConfigIn(**config_args)
+
+        return DeviceConfig.from_incoming(config_in)
 
     @staticmethod
     def get_encoder_config(
@@ -182,7 +185,6 @@ class MftSysexApi:
         encoder_index: int,
         timeout: float = 1.0,
     ) -> EncoderConfig:
-        """Request and return the :class:`EncoderConfig` for an encoder."""
         sysex_tag = encoder_index + 1
         request = [
             0xF0,
@@ -229,7 +231,9 @@ class MftSysexApi:
             if addr in addr_to_name
         }
 
-        return EncoderConfig.from_device(config_dict)
+        config_in = EncoderConfigIn(**config_dict)
+
+        return EncoderConfig.from_incoming(config_in)
 
     @staticmethod
     def set_encoder_value(
@@ -238,7 +242,6 @@ class MftSysexApi:
         value: int,
         channel: int = constants.MidiChannel.ROTARY_ENCODER,
     ) -> None:
-        """Send a control change with the specified value."""
 
         if not 0 <= channel <= 15:
             raise ValueError("channel must be in range 0-15")
@@ -261,26 +264,6 @@ class MftSysexApi:
         channel: int = constants.MidiChannel.ROTARY_ENCODER,
         timeout: float = 1.0,
     ) -> Optional[int]:
-        """Wait for and return a control change value for the encoder.
-
-        Parameters
-        ----------
-        midi_in : MidiInput
-            Input device to read MIDI messages from.
-        encoder_index : int
-            The encoder (Control Change number) to listen for.
-        channel : int, optional
-            MIDI channel to listen on, by default ``MidiChannel.ROTARY_ENCODER``.
-        timeout : float, optional
-            Maximum time in seconds to wait for the message. ``1.0`` by default.
-
-        Returns
-        -------
-        Optional[int]
-            The value of the control change if received within the timeout,
-            otherwise ``None``.
-        """
-
         if not 0 <= channel <= 15:
             raise ValueError("channel must be in range 0-15")
 
