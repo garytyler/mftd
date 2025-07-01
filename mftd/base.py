@@ -64,7 +64,7 @@ class BaseModel:
             try:
                 value = data[field_addr]
             except KeyError:
-                value = field.default
+                continue
             else:
                 value = cls.transform_incoming(field.name, value)
             kwargs[field.name] = value

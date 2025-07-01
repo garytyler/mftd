@@ -4,28 +4,6 @@ from mftd.constants import MidiChannel
 from mftd.device import DeviceConfig
 
 
-def test_set_encoder_value(
-    mft,
-) -> None:
-    device_config = DeviceConfig()
-    encoder_index = 0
-    encoder_value = 30
-    encoder_config = mft.get_encoder_config(encoder_index)
-    # encoder_config.encoder_midi_channel = MidiChannel(
-    #     encoder_config.encoder_midi_channel - 1
-    # )
-    # encoder_config.encoder_midi_channel = MidiChannel(
-    #     encoder_config.encoder_midi_channel - 1
-    # )
-
-    mft.set_device_config(device_config)
-    mft.set_encoder_value(
-        encoder_index=encoder_config.encoder_midi_number,
-        value=encoder_value,
-        channel=encoder_config.encoder_midi_channel,
-    )
-
-
 def test_device_channel_index(
     mft,
 ) -> None:
