@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import time
-from dataclasses import fields, asdict
+from dataclasses import fields
 from typing import Iterable, Optional, List
 
 from . import constants
-from .device import DeviceConfig, DeviceConfigIn
-from .encoder import EncoderConfig, EncoderConfigIn
+from .device import DeviceConfig
+from .encoder import EncoderConfig
 from .protocol import MidiOutput, MidiInput
 
 
@@ -21,7 +21,7 @@ class MftSysexApi:
         config: DeviceConfig,
     ) -> None:
 
-        config_out = DeviceConfigIn(**asdict(config))
+        out_data = config.to_out_dict()
 
         def _int(value: int) -> int:
             if hasattr(value, "value"):
@@ -30,11 +30,7 @@ class MftSysexApi:
 
         pairs: list[int] = []
 
-        for f in fields(config_out):
-            if "addr" not in f.metadata:
-                continue
-            addr = f.metadata["addr"]
-            val = getattr(config_out, f.name)
+        for addr, val in out_data.items():
             if val is not None:
                 pairs.extend([addr, _int(val)])
 
@@ -64,15 +60,12 @@ class MftSysexApi:
         config: EncoderConfig,
     ) -> None:
 
-        config_out = EncoderConfigIn(**asdict(config))
+        out_data = config.to_out_dict()
 
         sysex_tag = encoder_index + 1
+
         params: List[int] = []
-        for f in fields(config_out):
-            if "addr" not in f.metadata:
-                continue
-            address = f.metadata["addr"]
-            value = getattr(config_out, f.name)
+        for address, value in out_data.items():
             if value is None:
                 continue
             elif hasattr(value, "value"):
@@ -171,12 +164,7 @@ class MftSysexApi:
             unseen_names = [addr_to_name[addr] for addr in unseen_addrs]
             raise RuntimeError(f"Missing config values: {unseen_names}")
 
-        # Prepare arguments and build instance using BaseModel utility
-        config_args = {addr_to_name[addr]: val for addr, val in config_values.items()}
-
-        config_in = DeviceConfigIn(**config_args)
-
-        return DeviceConfig.from_incoming(config_in)
+        return DeviceConfig.from_in_dict(config_values)
 
     @staticmethod
     def get_encoder_config(
@@ -219,21 +207,8 @@ class MftSysexApi:
             raise RuntimeError(
                 f"Failed to receive encoder config for encoder {encoder_index}"
             )
-        addr_to_name = {
-            f.metadata["addr"]: f.name
-            for f in fields(EncoderConfig)
-            if "addr" in f.metadata
-        }
 
-        config_dict = {
-            addr_to_name[addr]: val
-            for addr, val in responses.items()
-            if addr in addr_to_name
-        }
-
-        config_in = EncoderConfigIn(**config_dict)
-
-        return EncoderConfig.from_incoming(config_in)
+        return EncoderConfig.from_in_dict(responses)
 
     @staticmethod
     def set_encoder_value(

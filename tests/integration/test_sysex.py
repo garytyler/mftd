@@ -37,7 +37,7 @@ def test_get_global_config(rtmidi_stub):
         f.name: f.metadata["addr"] for f in fields(DeviceConfig) if "addr" in f.metadata
     }
     for key, val in {
-        "system_midi_channel": int(MidiChannel.ROTARY_ENCODER),
+        "system_midi_channel": int(MidiChannel.SYSTEM),
         "super_knob_start": 40,
         "super_knob_end": 90,
         "rgb_led_brightness": 99,

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import field, dataclass
+from enum import IntEnum
 
-from .base import BaseModel, BaseModelOut, BaseModelIn
+from .base import BaseModel
 from .constants import MidiChannel, SysexBool, SideSwitchAction
 
 
@@ -57,12 +58,15 @@ class DeviceConfig(BaseModel):
         metadata={"addr": 32},
     )
 
+    def transform_outgoing(self, name: str, value: int | IntEnum):
+        if name == "system_midi_channel":
+            return value + 1
+        else:
+            return value
 
-@dataclass
-class DeviceConfigOut(DeviceConfig, BaseModelOut):
-    pass
-
-
-@dataclass
-class DeviceConfigIn(DeviceConfig, BaseModelIn):
-    pass
+    @classmethod
+    def transform_incoming(cls, name: str, value: int | IntEnum):
+        if name == "system_midi_channel":
+            return value - 1
+        else:
+            return value

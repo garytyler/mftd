@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import field, dataclass
+from enum import IntEnum
 
 from mftd.constants import (
     MidiChannel,
@@ -12,7 +13,7 @@ from mftd.constants import (
     DetentColorValue,
     EncoderIndicatorDisplayType,
 )
-from .base import BaseModel, BaseModelOut, BaseModelIn
+from .base import BaseModel
 
 
 @dataclass
@@ -78,12 +79,19 @@ class EncoderConfig(BaseModel):
         metadata={"addr": 24},
     )
 
+    def transform_outgoing(self, name: str, value: int | IntEnum):
+        if name == "encoder_midi_channel":
+            return value + 1
+        elif name == "switch_midi_channel":
+            return value + 1
+        else:
+            return value
 
-@dataclass
-class EncoderConfigOut(EncoderConfig, BaseModelOut):
-    pass
-
-
-@dataclass
-class EncoderConfigIn(EncoderConfig, BaseModelIn):
-    pass
+    @classmethod
+    def transform_incoming(cls, name: str, value: int | IntEnum):
+        if name == "encoder_midi_channel":
+            return value - 1
+        elif name == "switch_midi_channel":
+            return value - 1
+        else:
+            return value
