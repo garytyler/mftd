@@ -33,7 +33,7 @@ class MidiFighterTwister:
             raise RuntimeError("MIDI output is not available.")
         MftSysexApi.set_device_config(
             midi_out=self.midi_output,
-            config=device_config,
+            configmerg=device_config,
         )
 
     def set_encoder_config(
@@ -47,7 +47,7 @@ class MidiFighterTwister:
         return MftSysexApi.set_encoder_config(
             midi_out=self.midi_output,
             encoder_index=encoder_index,
-            config=encoder_config,
+            configmerg=encoder_config,
         )
 
     def get_device_config(
