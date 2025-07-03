@@ -116,10 +116,12 @@ class MidiFighterTwister:
         )
 
     def close(self):
-        if hasattr(self, "midi_input"):
-            self.midi_input.close_port()
-        if hasattr(self, "midi_output"):
-            self.midi_output.close_port()
+        midi_input = getattr(self, "midi_input", None)
+        if midi_input:
+            midi_input.close_port()
+        midi_output = getattr(self, "midi_output", None)
+        if midi_output:
+            midi_output.close_port()
 
     def __enter__(self):
         return self
