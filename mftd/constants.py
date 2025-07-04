@@ -117,6 +117,7 @@ class DetentColorValue(IntEnum):
     """
 
     RED = 0
+    ORANGE = 1
     LIGHT_ORANGE = 2
     PINK = 5
     PURPLE = 10
