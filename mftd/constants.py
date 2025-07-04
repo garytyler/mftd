@@ -96,11 +96,15 @@ class ColorValue(IntEnum):
     DEFAULT_INACTIVE = 113  # Typically blue
     DEFAULT_DETENT = 63  # Default detent color, typically pink
 
+    BLACK = 0
     BLUE = 1
+    LIGHT_BLUE = 19
+    LIGHT_GREEN = 40
     GREEN = 50
-    RED = 80
     YELLOW = 64
-    PINK = 100
+    RED = 80
+    LIGHT_RED = 88
+    WHITE = 127
 
     PRIMARY = BLUE  # Default color for primary channel
     AUX = RED  # Default color for aux channel
