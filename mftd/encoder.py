@@ -99,3 +99,22 @@ class EncoderConfig(BaseModel):
             return value + 1
         else:
             return value
+
+
+EncoderConfig(
+    detent=SysexBool.TRUE,
+    movement_type=EncoderMovementType.DIRECT_HIGH_RESOLUTION,
+    switch_action_type=EncoderSwitchActionType.CC_HOLD,
+    switch_midi_channel=MidiChannel.SWITCH_AND_COLOR,
+    switch_midi_number=0,
+    switch_midi_type=0,
+    encoder_midi_channel=MidiChannel.ROTARY_ENCODER,
+    encoder_midi_number=0,
+    encoder_midi_type=EncoderMidiMessageType.SEND_CC,
+    active_color=ColorValue.DEFAULT_ACTIVE,
+    inactive_color=ColorValue.DEFAULT_INACTIVE,
+    detent_color=DetentColorValue.RED,
+    indicator_display_type=EncoderIndicatorDisplayType.BLENDED_BAR,
+    is_super_knob=SysexBool.FALSE,
+    encoder_shift_midi_channel=MidiChannel.SHIFT,
+)

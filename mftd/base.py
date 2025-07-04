@@ -36,7 +36,7 @@ class BaseModel:
                 return value
             if isinstance(field_type, type) and not isinstance(value, field_type):
                 return field_type(value)
-        except TypeError:
+        except (TypeError, ValueError):
             pass
         return value
 

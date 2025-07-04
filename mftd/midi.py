@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import cast
 
-
 from mftd import constants
 from mftd.protocol import MidiInput, MidiOutput
 
@@ -10,17 +9,14 @@ from mftd.protocol import MidiInput, MidiOutput
 class TdMidiOutput(MidiOutput):
     """MidiOutput wrapper for TouchDesigner."""
 
-    midi_out_chop_name = "mftMidiSystemOut"
+    midi_out_chop_name = "midiOut"
     midi_out_chop_type = "midioutCHOP"
 
-    def __init__(self, chop=None) -> None:
-        self.parent_op = op("/project1")  # type: ignore[name-defined]  # noqa: F821
-        self.midi_out_chop = self.parent_op.op(self.midi_out_chop_name)
-        if not self.midi_out_chop:
-            self.midi_out_chop = self.parent_op.create(
-                self.midi_out_chop_type, self.midi_out_chop_name
-            )
-        self.chop = chop or self.midi_out_chop
+    def __init__(self, midi_out_chop=None) -> None:
+        if midi_out_chop:
+            self.chop = midi_out_chop
+        else:
+            self.chop = me.parent().op(self.midi_out_chop_name)  # type: ignore[name-defined]  # noqa: F821
 
     def get_port_count(self) -> int:  # pragma: no cover - TD only
         return 1
