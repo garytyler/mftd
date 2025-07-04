@@ -117,8 +117,12 @@ class DetentColorValue(IntEnum):
     """
 
     RED = 0
-    PINK = 63
+    LIGHT_ORANGE = 2
+    PINK = 5
+    PURPLE = 10
     BLUE = 127
+
+    DEFAULT = 63
 
 
 class AnimationValues(IntEnum):

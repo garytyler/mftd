@@ -63,7 +63,7 @@ class EncoderConfig(BaseModel):
         metadata={"addr": 20},
     )
     detent_color: DetentColorValue = field(
-        default=DetentColorValue.PINK,
+        default=DetentColorValue.DEFAULT,
         metadata={"addr": 21},
     )
     indicator_display_type: EncoderIndicatorDisplayType = field(
