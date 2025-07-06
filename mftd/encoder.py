@@ -86,6 +86,8 @@ class EncoderConfig(BaseModel):
             return value + 1
         elif name == "switch_midi_type":  # Appears no longer used
             return value - 1
+        elif name == "encoder_shift_midi_channel":
+            return value - 1
         else:
             return value
 
@@ -96,6 +98,8 @@ class EncoderConfig(BaseModel):
         elif name == "switch_midi_channel":
             return value - 1
         elif name == "switch_midi_type":  # Appears no longer used
+            return value + 1
+        elif name == "encoder_shift_midi_channel":
             return value + 1
         else:
             return value
