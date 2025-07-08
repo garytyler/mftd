@@ -98,16 +98,7 @@ class MidiFighterTwister:
         value: int,
         channel: MidiChannel = MidiChannel.ROTARY_ENCODER,
     ):
-        """Request and return the current encoder configuration."""
-        if not self.midi_output or not self.midi_input:
-            if is_td_available():
-                raise RuntimeError(
-                    "get_encoder_config() is not supported in TouchDesigner."
-                )
-            elif not self.midi_output:
-                raise RuntimeError("MIDI output is not available.")
-            elif not self.midi_input:
-                raise RuntimeError("MIDI input is not available.")
+        """Set an encoder value."""
         return self.api.set_encoder_value(
             midi_out=self.midi_output,
             encoder_index=encoder_index,
