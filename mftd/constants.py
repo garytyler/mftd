@@ -102,7 +102,7 @@ class ColorValue(IntEnum):
     LIGHT_GREEN = 40
     GREEN = 50
     YELLOW = 64
-    RED = 80
+    RED = 85
     LIGHT_RED = 88
     WHITE = 127
 

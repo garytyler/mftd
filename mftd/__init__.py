@@ -20,6 +20,7 @@ from mftd.constants import (
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
 from mftd.mft import MidiFighterTwister
+from mftd.midi import TdMidiOutput
 
 __all__ = [
     "MidiChannel",
@@ -40,6 +41,7 @@ __all__ = [
     "DeviceConfig",
     "EncoderConfig",
     "MidiFighterTwister",
+    "TdMidiOutput",
 ]
 
 
