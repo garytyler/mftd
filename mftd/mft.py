@@ -4,8 +4,8 @@ from typing import Optional
 
 from mftd.constants import (
     MidiChannel,
-    RgbBrightness,
-    IndicatorBrightness,
+    EncoderRgbBrightness,
+    EncoderIndicatorBrightness,
     AnimationValues,
 )
 from mftd.device import DeviceConfig
@@ -130,7 +130,7 @@ class MidiFighterTwister:
     def set_encoder_indicator_brightness(
         self,
         encoder_index: int,
-        brightness: IndicatorBrightness,
+        brightness: EncoderIndicatorBrightness,
         channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
     ) -> None:
         """Set the indicator ring brightness for a single encoder."""
@@ -146,7 +146,7 @@ class MidiFighterTwister:
     def set_encoder_rgb_brightness(
         self,
         encoder_index: int,
-        brightness: RgbBrightness,
+        brightness: EncoderRgbBrightness,
         channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
     ) -> None:
         """Set the RGB LED brightness for a single encoder."""

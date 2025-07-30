@@ -188,7 +188,7 @@ class AnimationValues(IntEnum):
     RAINBOW_CYCLE = 127  # Set RGB segment to a rainbow cycle animation
 
 
-class RgbBrightness(IntEnum):
+class EncoderRgbBrightness(IntEnum):
     """Convenience enum for RGB LED brightness levels."""
 
     OFF = AnimationValues.RGB_BRIGHTNESS_OFF
@@ -196,7 +196,7 @@ class RgbBrightness(IntEnum):
     MAX = AnimationValues.RGB_BRIGHTNESS_MAX
 
 
-class IndicatorBrightness(IntEnum):
+class EncoderIndicatorBrightness(IntEnum):
     """Convenience enum for indicator LED brightness levels."""
 
     OFF = AnimationValues.INDICATOR_BRIGHTNESS_OFF
