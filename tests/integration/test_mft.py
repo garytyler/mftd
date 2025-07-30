@@ -130,3 +130,40 @@ def test_set_encoder_value(mft):
     expected = [expected_status, encoder_index, value]
 
     assert mft.midi_output.messages == [expected]
+
+
+def test_set_encoder_animation(mft):
+    encoder_index = 3
+    value = constants.AnimationValues.RGB_BRIGHTNESS_MID
+    channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
+
+    mft.set_encoder_animation(encoder_index, value, channel)
+
+    expected_status = 0xB0 | (channel & 0x0F)
+    expected = [expected_status, encoder_index, int(value)]
+
+    assert mft.midi_output.messages[-1] == expected
+
+
+def test_set_indicator_brightness(mft):
+    encoder_index = 4
+    brightness = constants.IndicatorBrightnessValues.QUARTER
+
+    mft.set_indicator_brightness(encoder_index, brightness)
+
+    expected_status = 0xB0 | (constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS & 0x0F)
+    expected = [expected_status, encoder_index, int(brightness)]
+
+    assert mft.midi_output.messages[-1] == expected
+
+
+def test_set_rgb_brightness(mft):
+    encoder_index = 7
+    brightness = constants.RgbBrightnessValues.MAX
+
+    mft.set_rgb_brightness(encoder_index, brightness)
+
+    expected_status = 0xB0 | (constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS & 0x0F)
+    expected = [expected_status, encoder_index, int(brightness)]
+
+    assert mft.midi_output.messages[-1] == expected

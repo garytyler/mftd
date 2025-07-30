@@ -106,6 +106,48 @@ class MidiFighterTwister:
             channel=channel,
         )
 
+    def set_encoder_animation(
+        self,
+        encoder_index: int,
+        value: int,
+        channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
+    ) -> None:
+        """Set an encoder animation or brightness value."""
+        return self.api.set_encoder_animation(
+            midi_out=self.midi_output,
+            encoder_index=encoder_index,
+            value=value,
+            channel=channel,
+        )
+
+    def set_indicator_brightness(
+        self,
+        encoder_index: int,
+        brightness: int,
+        channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
+    ) -> None:
+        """Set the indicator ring brightness for a single encoder."""
+        return self.api.set_indicator_brightness(
+            midi_out=self.midi_output,
+            encoder_index=encoder_index,
+            brightness=brightness,
+            channel=channel,
+        )
+
+    def set_rgb_brightness(
+        self,
+        encoder_index: int,
+        brightness: int,
+        channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
+    ) -> None:
+        """Set the RGB LED brightness for a single encoder."""
+        return self.api.set_rgb_brightness(
+            midi_out=self.midi_output,
+            encoder_index=encoder_index,
+            brightness=brightness,
+            channel=channel,
+        )
+
     def close(self):
         midi_input = getattr(self, "midi_input", None)
         if midi_input:

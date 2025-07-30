@@ -227,6 +227,51 @@ class MftSysexApi:
         MftSysexApi._send_midi(midi_out, message)
 
     @staticmethod
+    def set_encoder_animation(
+        midi_out: MidiOutput,
+        encoder_index: int,
+        value: int,
+        channel: int = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
+    ) -> None:
+
+        if not 0 <= channel <= 15:
+            raise ValueError("channel must be in range 0-15")
+
+        if not 0 <= encoder_index < constants.Encoders.DEVICE_KNOB_MAX:
+            raise ValueError("encoder_index must be in range 0-63")
+
+        if not 0 <= value <= 127:
+            raise ValueError("value must be in range 0-127")
+
+        status = 0xB0 | (channel & 0x0F)
+        message = [status, encoder_index, value]
+        MftSysexApi._send_midi(midi_out, message)
+
+    @staticmethod
+    def set_indicator_brightness(
+        midi_out: MidiOutput,
+        encoder_index: int,
+        brightness: int,
+        channel: int = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
+    ) -> None:
+        """Convenience wrapper for setting indicator brightness."""
+        MftSysexApi.set_encoder_animation(
+            midi_out, encoder_index, brightness, channel
+        )
+
+    @staticmethod
+    def set_rgb_brightness(
+        midi_out: MidiOutput,
+        encoder_index: int,
+        brightness: int,
+        channel: int = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
+    ) -> None:
+        """Convenience wrapper for setting RGB LED brightness."""
+        MftSysexApi.set_encoder_animation(
+            midi_out, encoder_index, brightness, channel
+        )
+
+    @staticmethod
     def get_encoder_value(
         midi_out: MidiOutput,
         midi_in: MidiInput,
