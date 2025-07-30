@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from mftd.constants import MidiChannel
+from mftd.constants import (
+    MidiChannel,
+    RgbBrightness,
+    IndicatorBrightness,
+    AnimationValues,
+)
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
 from mftd.midi import (
@@ -109,11 +114,13 @@ class MidiFighterTwister:
     def set_encoder_animation(
         self,
         encoder_index: int,
-        value: int,
+        value: AnimationValues,
         channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
     ) -> None:
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
         """Set an encoder animation or brightness value."""
-        return self.api.set_encoder_animation(
+        return self.api.set_encoder_animation_and_brightness(
             midi_out=self.midi_output,
             encoder_index=encoder_index,
             value=value,
@@ -123,28 +130,32 @@ class MidiFighterTwister:
     def set_indicator_brightness(
         self,
         encoder_index: int,
-        brightness: int,
+        brightness: IndicatorBrightness,
         channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
     ) -> None:
         """Set the indicator ring brightness for a single encoder."""
-        return self.api.set_indicator_brightness(
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
+        return self.api.set_encoder_animation_and_brightness(
             midi_out=self.midi_output,
             encoder_index=encoder_index,
-            brightness=brightness,
+            value=int(brightness),
             channel=channel,
         )
 
     def set_rgb_brightness(
         self,
         encoder_index: int,
-        brightness: int,
+        brightness: RgbBrightness,
         channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
     ) -> None:
         """Set the RGB LED brightness for a single encoder."""
-        return self.api.set_rgb_brightness(
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
+        return self.api.set_encoder_animation_and_brightness(
             midi_out=self.midi_output,
             encoder_index=encoder_index,
-            brightness=brightness,
+            value=int(brightness),
             channel=channel,
         )
 
