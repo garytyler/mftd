@@ -149,7 +149,7 @@ def test_set_indicator_brightness(mft):
     encoder_index = 4
     brightness = constants.IndicatorBrightness.QUARTER
 
-    mft.set_indicator_brightness(encoder_index, brightness)
+    mft.set_encoder_indicator_brightness(encoder_index, brightness)
 
     expected_status = 0xB0 | (constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS & 0x0F)
     expected = [expected_status, encoder_index, int(brightness)]
@@ -161,7 +161,7 @@ def test_set_rgb_brightness(mft):
     encoder_index = 7
     brightness = constants.RgbBrightness.MAX
 
-    mft.set_rgb_brightness(encoder_index, brightness)
+    mft.set_encoder_rgb_brightness(encoder_index, brightness)
 
     expected_status = 0xB0 | (constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS & 0x0F)
     expected = [expected_status, encoder_index, int(brightness)]

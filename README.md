@@ -44,13 +44,13 @@ from mftd import (
 
 with MidiFighterTwister() as mft:
     # Set encoder 1 indicator to maximum brightness
-    mft.set_indicator_brightness(
+    mft.set_encoder_indicator_brightness(
         0,
         IndicatorBrightness.MAX,
     )
 
     # Dim the RGB LED for encoder 1
-    mft.set_rgb_brightness(
+    mft.set_encoder_rgb_brightness(
         0,
         RgbBrightness.MID,
     )

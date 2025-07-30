@@ -127,7 +127,7 @@ class MidiFighterTwister:
             channel=channel,
         )
 
-    def set_indicator_brightness(
+    def set_encoder_indicator_brightness(
         self,
         encoder_index: int,
         brightness: IndicatorBrightness,
@@ -143,7 +143,7 @@ class MidiFighterTwister:
             channel=channel,
         )
 
-    def set_rgb_brightness(
+    def set_encoder_rgb_brightness(
         self,
         encoder_index: int,
         brightness: RgbBrightness,
