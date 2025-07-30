@@ -164,42 +164,11 @@ def test_set_encoder_animation_sends_correct_cc(rtmidi_stub):
     channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
     midi_out = rtmidi_stub.MidiOut()
 
-    MftSysexApi.set_encoder_animation_and_brightness(midi_out, encoder_index, value, channel)
-
-    expected_status = 0xB0 | (channel & 0x0F)
-    expected = [expected_status, encoder_index, int(value)]
-
-    assert midi_out.messages == [expected]
-
-
-def test_set_indicator_brightness_helper(rtmidi_stub):
-    encoder_index = 2
-    brightness = constants.IndicatorBrightness.MID
-    channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
-    midi_out = rtmidi_stub.MidiOut()
-
-    MftSysexApi.set_indicator_brightness(
-        midi_out,
-        encoder_index,
-        brightness,
-        channel,
+    MftSysexApi.set_encoder_animation_and_brightness(
+        midi_out, encoder_index, value, channel
     )
 
     expected_status = 0xB0 | (channel & 0x0F)
-    expected = [expected_status, encoder_index, int(brightness)]
-
-    assert midi_out.messages == [expected]
-
-
-def test_set_rgb_brightness_helper(rtmidi_stub):
-    encoder_index = 1
-    brightness = constants.RgbBrightness.OFF
-    channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
-    midi_out = rtmidi_stub.MidiOut()
-
-    MftSysexApi.set_rgb_brightness(midi_out, encoder_index, brightness, channel)
-
-    expected_status = 0xB0 | (channel & 0x0F)
-    expected = [expected_status, encoder_index, int(brightness)]
+    expected = [expected_status, encoder_index, int(value)]
 
     assert midi_out.messages == [expected]

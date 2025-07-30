@@ -191,18 +191,18 @@ class AnimationValues(IntEnum):
 class RgbBrightness(IntEnum):
     """Convenience enum for RGB LED brightness levels."""
 
-    OFF = AnimationValues.RGB_BRIGHTNESS_OFF.value
-    MID = AnimationValues.RGB_BRIGHTNESS_MID.value
-    MAX = AnimationValues.RGB_BRIGHTNESS_MAX.value
+    OFF = AnimationValues.RGB_BRIGHTNESS_OFF
+    MID = AnimationValues.RGB_BRIGHTNESS_MID
+    MAX = AnimationValues.RGB_BRIGHTNESS_MAX
 
 
 class IndicatorBrightness(IntEnum):
     """Convenience enum for indicator LED brightness levels."""
 
-    OFF = AnimationValues.INDICATOR_BRIGHTNESS_OFF.value
-    QUARTER = AnimationValues.INDICATOR_BRIGHTNESS_25.value
-    MID = AnimationValues.INDICATOR_BRIGHTNESS_MID.value
-    MAX = AnimationValues.INDICATOR_BRIGHTNESS_MAX.value
+    OFF = AnimationValues.INDICATOR_BRIGHTNESS_OFF
+    QUARTER = AnimationValues.INDICATOR_BRIGHTNESS_25
+    MID = AnimationValues.INDICATOR_BRIGHTNESS_MID
+    MAX = AnimationValues.INDICATOR_BRIGHTNESS_MAX
 
 
 class EncoderControlType(IntEnum):
