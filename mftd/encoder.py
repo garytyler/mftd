@@ -79,6 +79,10 @@ class EncoderConfig(BaseModel):
         metadata={"addr": 24},
     )
 
+    @property
+    def index(self):
+        return self.encoder_midi_number
+
     def transform_outgoing(self, name: str, value: int | IntEnum):
         if name == "encoder_midi_channel":
             return value + 1
