@@ -38,20 +38,20 @@ animation or the convenience helpers `set_indicator_brightness()` and
 from mftd import (
     MidiFighterTwister,
     AnimationValues,
-    IndicatorBrightnessValues,
-    RgbBrightnessValues,
+    IndicatorBrightness,
+    RgbBrightness,
 )
 
 with MidiFighterTwister() as mft:
     # Set encoder 1 indicator to maximum brightness
     mft.set_indicator_brightness(
         0,
-        IndicatorBrightnessValues.MAX,
+        IndicatorBrightness.MAX,
     )
 
     # Dim the RGB LED for encoder 1
     mft.set_rgb_brightness(
         0,
-        RgbBrightnessValues.MID,
+        RgbBrightness.MID,
     )
 ```

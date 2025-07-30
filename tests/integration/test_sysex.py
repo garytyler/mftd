@@ -128,7 +128,6 @@ def test_get_encoder_config(rtmidi_stub):
     cfg = EncoderConfig.from_in_dict(in_data)
     assert cfg.active_color == consts.ColorValue.BLUE
     assert cfg.detent_color == consts.DetentColorValue.RED
-    print(DeviceConfig()._addrs_to_names)
 
 
 def test_set_encoder_value_sends_correct_cc(rtmidi_stub):
@@ -165,7 +164,7 @@ def test_set_encoder_animation_sends_correct_cc(rtmidi_stub):
     channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
     midi_out = rtmidi_stub.MidiOut()
 
-    MftSysexApi.set_encoder_animation(midi_out, encoder_index, value, channel)
+    MftSysexApi.set_encoder_animation_and_brightness(midi_out, encoder_index, value, channel)
 
     expected_status = 0xB0 | (channel & 0x0F)
     expected = [expected_status, encoder_index, int(value)]
@@ -175,7 +174,7 @@ def test_set_encoder_animation_sends_correct_cc(rtmidi_stub):
 
 def test_set_indicator_brightness_helper(rtmidi_stub):
     encoder_index = 2
-    brightness = constants.IndicatorBrightnessValues.MID
+    brightness = constants.IndicatorBrightness.MID
     channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
     midi_out = rtmidi_stub.MidiOut()
 
@@ -194,7 +193,7 @@ def test_set_indicator_brightness_helper(rtmidi_stub):
 
 def test_set_rgb_brightness_helper(rtmidi_stub):
     encoder_index = 1
-    brightness = constants.RgbBrightnessValues.OFF
+    brightness = constants.RgbBrightness.OFF
     channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
     midi_out = rtmidi_stub.MidiOut()
 

@@ -7,7 +7,6 @@ from mftd.device import DeviceConfig
 def test_device_channel_transform(
     mft,
 ) -> None:
-
     device_config_1 = DeviceConfig()
     device_config_1.system_midi_channel = MidiChannel.SYSTEM
     mft.set_device_config(device_config_1)
@@ -17,9 +16,6 @@ def test_device_channel_transform(
     assert device_config_2.system_midi_channel == device_config_1.system_midi_channel
     assert device_config_1.system_midi_channel == MidiChannel.SYSTEM
     assert device_config_2.system_midi_channel == MidiChannel.SYSTEM
-
-    print(device_config_1)
-    print(device_config_2)
 
 
 def test_encoder_channel_transform(

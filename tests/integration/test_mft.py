@@ -147,7 +147,7 @@ def test_set_encoder_animation(mft):
 
 def test_set_indicator_brightness(mft):
     encoder_index = 4
-    brightness = constants.IndicatorBrightnessValues.QUARTER
+    brightness = constants.IndicatorBrightness.QUARTER
 
     mft.set_indicator_brightness(encoder_index, brightness)
 
@@ -159,7 +159,7 @@ def test_set_indicator_brightness(mft):
 
 def test_set_rgb_brightness(mft):
     encoder_index = 7
-    brightness = constants.RgbBrightnessValues.MAX
+    brightness = constants.RgbBrightness.MAX
 
     mft.set_rgb_brightness(encoder_index, brightness)
 

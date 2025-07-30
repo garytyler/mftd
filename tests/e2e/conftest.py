@@ -64,9 +64,6 @@ def _encoder_configs(device_config, midi_out, midi_in, mft, api):
         config = EncoderConfig.from_in_dict(in_data)
         encoder_configs.append((n, config))
 
-    for index, config in encoder_configs:
-        print(config.inactive_color)
-
     yield
 
     for n, config in encoder_configs:
