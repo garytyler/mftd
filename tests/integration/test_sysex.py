@@ -22,7 +22,7 @@ def test_set_global_config(rtmidi_stub):
     for m in out.messages:
         merged.extend(m)
     assert merged[0] == 0xF0
-    assert constants.SysexCommands.PUSH_CONF in merged
+    assert constants.SysexCommand.PUSH_CONF in merged
     assert 31 in merged and 88 in merged
     assert merged[-1] == 0xF7
 
@@ -59,7 +59,7 @@ def test_get_global_config(rtmidi_stub):
         consts.MIDI_MFR_ID_0,
         consts.MIDI_MFR_ID_1,
         consts.MIDI_MFR_ID_2,
-        consts.SysexCommands.PULL_CONF,
+        consts.SysexCommand.PULL_CONF,
         0x00,  # status byte
         *response_values,
         0xF7,  # EOX
@@ -71,21 +71,21 @@ def test_get_global_config(rtmidi_stub):
 
     assert cfg.rgb_led_brightness == 99
     out_msg = out.messages[-1]
-    assert out_msg[4] == consts.SysexCommands.PULL_CONF
+    assert out_msg[4] == consts.SysexCommand.PULL_CONF
 
 
 def test_set_encoder_config(rtmidi_stub):
     api = MftSysexApi
     out = rtmidi_stub.MidiOut()
     cfg = EncoderConfig()
-    cfg.active_color = constants.ColorValue.RED
+    cfg.active_color = constants.Color.RED
 
     out_data = cfg.to_out_dict()
     api.set_encoder_config(out, 0, out_data)
 
     assert out.messages[0][0] == 0xF0
-    assert out.messages[0][4] == constants.SysexCommands.BULK_XFER
-    assert constants.ColorValue.RED in out.messages[0]
+    assert out.messages[0][4] == constants.SysexCommand.BULK_XFER
+    assert constants.Color.RED in out.messages[0]
     assert out.messages[0][-1] == 0xF7
 
 
@@ -108,7 +108,7 @@ def test_get_encoder_config(rtmidi_stub):
         consts.MIDI_MFR_ID_0,
         consts.MIDI_MFR_ID_1,
         consts.MIDI_MFR_ID_2,
-        consts.SysexCommands.BULK_XFER,
+        consts.SysexCommand.BULK_XFER,
         0x00,
         1,  # sysex_tag
         1,  # part
@@ -117,17 +117,17 @@ def test_get_encoder_config(rtmidi_stub):
         encoder_midi_number_addr,  # Add address for encoder_midi_number
         0,  # Value for encoder_midi_number (using the test index)
         19,
-        consts.ColorValue.BLUE,
+        consts.Color.BLUE,
         21,
-        consts.DetentColorValue.RED,
+        consts.DetentColor.RED,
         0xF7,
     ]
     inp.messages.append((resp, None))
 
     in_data = api.get_encoder_config(out, inp, 0)
     cfg = EncoderConfig.from_in_dict(in_data)
-    assert cfg.active_color == consts.ColorValue.BLUE
-    assert cfg.detent_color == consts.DetentColorValue.RED
+    assert cfg.active_color == consts.Color.BLUE
+    assert cfg.detent_color == consts.DetentColor.RED
 
 
 def test_set_encoder_value_sends_correct_cc(rtmidi_stub):
@@ -160,7 +160,7 @@ def test_set_encoder_value_sends_correct_cc(rtmidi_stub):
 
 def test_set_encoder_animation_sends_correct_cc(rtmidi_stub):
     encoder_index = 5
-    value = constants.AnimationValues.INDICATOR_BRIGHTNESS_MAX
+    value = constants.EncoderAnimation.INDICATOR_BRIGHTNESS_MAX
     channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
     midi_out = rtmidi_stub.MidiOut()
 

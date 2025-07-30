@@ -6,7 +6,7 @@ from mftd.constants import (
     MidiChannel,
     EncoderRgbBrightness,
     EncoderIndicatorBrightness,
-    AnimationValues,
+    EncoderAnimation,
 )
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
@@ -114,7 +114,7 @@ class MidiFighterTwister:
     def set_encoder_animation(
         self,
         encoder_index: int,
-        value: AnimationValues,
+        value: EncoderAnimation,
         channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
     ) -> None:
         if not self.midi_output:

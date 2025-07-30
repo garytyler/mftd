@@ -36,7 +36,7 @@ class MftSysexApi:
             constants.MIDI_MFR_ID_0,
             constants.MIDI_MFR_ID_1,
             constants.MIDI_MFR_ID_2,
-            constants.SysexCommands.PUSH_CONF,
+            constants.SysexCommand.PUSH_CONF,
         ]
         payload = header.copy()
         for i in range(0, len(pairs), 2):
@@ -92,7 +92,7 @@ class MftSysexApi:
                         constants.MIDI_MFR_ID_2,
                     ]
                     + [
-                        constants.SysexCommands.BULK_XFER,
+                        constants.SysexCommand.BULK_XFER,
                         0x00,
                         sysex_tag,
                         part,
@@ -117,7 +117,7 @@ class MftSysexApi:
             constants.MIDI_MFR_ID_0,
             constants.MIDI_MFR_ID_1,
             constants.MIDI_MFR_ID_2,
-            constants.SysexCommands.PULL_CONF,
+            constants.SysexCommand.PULL_CONF,
             0x00,
             0xF7,
         ]
@@ -133,7 +133,7 @@ class MftSysexApi:
                 break
 
             response = MftSysexApi._receive_sysex(
-                midi_in, constants.SysexCommands.PULL_CONF, remaining_time
+                midi_in, constants.SysexCommand.PULL_CONF, remaining_time
             )
 
             if response:
@@ -174,7 +174,7 @@ class MftSysexApi:
             constants.MIDI_MFR_ID_0,
             constants.MIDI_MFR_ID_1,
             constants.MIDI_MFR_ID_2,
-            constants.SysexCommands.BULK_XFER,
+            constants.SysexCommand.BULK_XFER,
             0x01,
             sysex_tag,
             0xF7,
@@ -183,7 +183,7 @@ class MftSysexApi:
         responses: dict[int, int] = {}
         while True:
             data = MftSysexApi._receive_sysex(
-                midi_in, constants.SysexCommands.BULK_XFER, timeout
+                midi_in, constants.SysexCommand.BULK_XFER, timeout
             )
             if not data:
                 break

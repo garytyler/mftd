@@ -42,7 +42,7 @@ class EncoderControl(IntEnum):
     KNOB_INCREMENT_VERY_FAST = 67  # For very fast clockwise knob rotation
 
 
-class SystemMessages(IntEnum):
+class SystemMessage(IntEnum):
     """
     Control Change (CC) values used for system messages.
     Refer to the "Virtual Bank Operation" section in the PDF.
@@ -86,7 +86,7 @@ class SystemMessages(IntEnum):
     BANK4_RIGHT3 = 31
 
 
-class ColorValue(IntEnum):
+class Color(IntEnum):
     """
     MIDI values for setting RGB colors on the encoders.
     Refer to the "Encoders Push Switches" section in the PDF.
@@ -111,7 +111,7 @@ class ColorValue(IntEnum):
     USER = GREEN  # Default color for user-defined color
 
 
-class DetentColorValue(IntEnum):
+class DetentColor(IntEnum):
     """
     MIDI values for setting the detent color on the encoders.
     """
@@ -126,7 +126,7 @@ class DetentColorValue(IntEnum):
     DEFAULT = 63
 
 
-class AnimationValues(IntEnum):
+class EncoderAnimation(IntEnum):
     """
     MIDI values for setting different animation effects for the encoders.
     Refer to the "Setting RGB / Indicator Segment Animation State" section.
@@ -191,18 +191,18 @@ class AnimationValues(IntEnum):
 class EncoderRgbBrightness(IntEnum):
     """Convenience enum for RGB LED brightness levels."""
 
-    OFF = AnimationValues.RGB_BRIGHTNESS_OFF
-    MID = AnimationValues.RGB_BRIGHTNESS_MID
-    MAX = AnimationValues.RGB_BRIGHTNESS_MAX
+    OFF = EncoderAnimation.RGB_BRIGHTNESS_OFF
+    MID = EncoderAnimation.RGB_BRIGHTNESS_MID
+    MAX = EncoderAnimation.RGB_BRIGHTNESS_MAX
 
 
 class EncoderIndicatorBrightness(IntEnum):
     """Convenience enum for indicator LED brightness levels."""
 
-    OFF = AnimationValues.INDICATOR_BRIGHTNESS_OFF
-    QUARTER = AnimationValues.INDICATOR_BRIGHTNESS_25
-    MID = AnimationValues.INDICATOR_BRIGHTNESS_MID
-    MAX = AnimationValues.INDICATOR_BRIGHTNESS_MAX
+    OFF = EncoderAnimation.INDICATOR_BRIGHTNESS_OFF
+    QUARTER = EncoderAnimation.INDICATOR_BRIGHTNESS_25
+    MID = EncoderAnimation.INDICATOR_BRIGHTNESS_MID
+    MAX = EncoderAnimation.INDICATOR_BRIGHTNESS_MAX
 
 
 class EncoderControlType(IntEnum):
@@ -255,7 +255,7 @@ class EncoderIndicatorDisplayType(IntEnum):
     BLENDED_DOT = 3  # Indicator displays a blended dot
 
 
-class SysexCommands(IntEnum):
+class SysexCommand(IntEnum):
     """
     SysEx commands used for configuring the MFT.
     Refer to the "Encoder Settings" section in the PDF.

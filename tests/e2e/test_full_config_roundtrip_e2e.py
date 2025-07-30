@@ -50,9 +50,9 @@ def test_encoder_config_roundtrip_all_fields(mft, test_encoder_index):
     new_config.encoder_midi_channel = constants.MidiChannel.SYSTEM
     new_config.encoder_midi_number = original_config.encoder_midi_number + 1
     new_config.encoder_midi_type = constants.EncoderMidiMessageType.SEND_NOTE
-    new_config.active_color = constants.ColorValue.BLUE
-    new_config.inactive_color = constants.ColorValue.GREEN
-    new_config.detent_color = constants.DetentColorValue.BLUE
+    new_config.active_color = constants.Color.BLUE
+    new_config.inactive_color = constants.Color.GREEN
+    new_config.detent_color = constants.DetentColor.BLUE
     new_config.indicator_display_type = constants.EncoderIndicatorDisplayType.DOT
     new_config.is_super_knob = constants.SysexBool.TRUE
     new_config.encoder_shift_midi_channel = constants.MidiChannel.SYSTEM

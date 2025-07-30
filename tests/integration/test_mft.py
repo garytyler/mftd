@@ -27,7 +27,7 @@ def test_set_device_config(mft):
         merged.extend(msg)
 
     assert merged[0] == 0xF0
-    assert constants.SysexCommands.PUSH_CONF in merged
+    assert constants.SysexCommand.PUSH_CONF in merged
     assert 31 in merged and 88 in merged
     assert merged[-1] == 0xF7
 
@@ -58,7 +58,7 @@ def test_get_device_config(mft):
         constants.MIDI_MFR_ID_0,
         constants.MIDI_MFR_ID_1,
         constants.MIDI_MFR_ID_2,
-        constants.SysexCommands.PULL_CONF,
+        constants.SysexCommand.PULL_CONF,
         0x00,
         *response_values,
         0xF7,
@@ -69,19 +69,19 @@ def test_get_device_config(mft):
     assert cfg is not None
     assert cfg.rgb_led_brightness == 99
     out_msg = mft.midi_output.messages[-1]
-    assert out_msg[4] == constants.SysexCommands.PULL_CONF
+    assert out_msg[4] == constants.SysexCommand.PULL_CONF
 
 
 def test_set_encoder_config(mft):
     cfg = EncoderConfig()
-    cfg.active_color = constants.ColorValue.RED
+    cfg.active_color = constants.Color.RED
 
     mft.set_encoder_config(0, cfg)
 
     msg = mft.midi_output.messages[0]
     assert msg[0] == 0xF0
-    assert msg[4] == constants.SysexCommands.BULK_XFER
-    assert constants.ColorValue.RED in msg
+    assert msg[4] == constants.SysexCommand.BULK_XFER
+    assert constants.Color.RED in msg
     assert msg[-1] == 0xF7
 
 
@@ -98,7 +98,7 @@ def test_get_encoder_config(mft):
         constants.MIDI_MFR_ID_0,
         constants.MIDI_MFR_ID_1,
         constants.MIDI_MFR_ID_2,
-        constants.SysexCommands.BULK_XFER,
+        constants.SysexCommand.BULK_XFER,
         0x00,
         1,
         1,
@@ -107,16 +107,16 @@ def test_get_encoder_config(mft):
         encoder_midi_number_addr,
         0,
         19,
-        constants.ColorValue.BLUE,
+        constants.Color.BLUE,
         21,
-        constants.DetentColorValue.RED,
+        constants.DetentColor.RED,
         0xF7,
     ]
     mft.midi_input.messages.append((resp, None))
 
     cfg = mft.get_encoder_config(0)
-    assert cfg.active_color == constants.ColorValue.BLUE
-    assert cfg.detent_color == constants.DetentColorValue.RED
+    assert cfg.active_color == constants.Color.BLUE
+    assert cfg.detent_color == constants.DetentColor.RED
 
 
 def test_set_encoder_value(mft):
@@ -134,7 +134,7 @@ def test_set_encoder_value(mft):
 
 def test_set_encoder_animation(mft):
     encoder_index = 3
-    value = constants.AnimationValues.RGB_BRIGHTNESS_MID
+    value = constants.EncoderAnimation.RGB_BRIGHTNESS_MID
     channel = constants.MidiChannel.ANIMATIONS_AND_BRIGHTNESS
 
     mft.set_encoder_animation(encoder_index, value, channel)

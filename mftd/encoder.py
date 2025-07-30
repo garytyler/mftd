@@ -9,8 +9,8 @@ from mftd.constants import (
     EncoderMovementType,
     EncoderSwitchActionType,
     EncoderMidiMessageType,
-    ColorValue,
-    DetentColorValue,
+    Color,
+    DetentColor,
     EncoderIndicatorDisplayType,
 )
 from .base import BaseModel
@@ -54,16 +54,16 @@ class EncoderConfig(BaseModel):
         default=EncoderMidiMessageType.SEND_CC,
         metadata={"addr": 18},
     )
-    active_color: ColorValue = field(
-        default=ColorValue.DEFAULT_ACTIVE,
+    active_color: Color = field(
+        default=Color.DEFAULT_ACTIVE,
         metadata={"addr": 19},
     )
-    inactive_color: ColorValue = field(
-        default=ColorValue.DEFAULT_INACTIVE,
+    inactive_color: Color = field(
+        default=Color.DEFAULT_INACTIVE,
         metadata={"addr": 20},
     )
-    detent_color: DetentColorValue = field(
-        default=DetentColorValue.DEFAULT,
+    detent_color: DetentColor = field(
+        default=DetentColor.DEFAULT,
         metadata={"addr": 21},
     )
     indicator_display_type: EncoderIndicatorDisplayType = field(

@@ -37,7 +37,7 @@ animation or the convenience helpers `set_indicator_brightness()` and
 ```python
 from mftd import (
     MidiFighterTwister,
-    AnimationValues,
+    EncoderAnimation,
     EncoderIndicatorBrightness,
     EncoderRgbBrightness,
 )
