@@ -51,3 +51,28 @@ async def test_midi_to_osc_forwards_control_change():
     await forwarder.stop()
     assert midi_in.callback is None
     assert midi_in.closed
+
+
+@pytest.mark.asyncio
+async def test_midi_to_osc_fans_out_to_configured_clients():
+    midi_in = FakeMidiIn()
+    primary_client = FakeOscClient()
+    extra_client = FakeOscClient()
+
+    forwarder = MidiToOscForwarder(
+        midi_in=midi_in,
+        osc_client=primary_client,
+        osc_dst_addr="/test/cc",
+        fanout={10: [extra_client]},
+    )
+
+    await forwarder.start()
+
+    midi_in.callback(([0xB0, 10, 99], 0.0), None)
+    await asyncio.sleep(0)
+
+    expected = [("/test/cc", [0, 10, 99])]
+    assert primary_client.sent == expected
+    assert extra_client.sent == expected
+
+    await forwarder.stop()

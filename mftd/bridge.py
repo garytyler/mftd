@@ -22,12 +22,15 @@ class MidiToOscForwarder:
         osc_dst_addr: str = "/mftd/cc",
         midi_in: Any | None = None,
         osc_client: Any | None = None,
+        fanout: dict[int, Sequence[tuple[str, int] | Any]] | None = None,
     ) -> None:
         self._osc_dst_host = osc_dst_host
         self._osc_dst_port = osc_dst_port
         self._osc_dst_addr = osc_dst_addr
         self._midi_in = midi_in
         self._osc_client = osc_client
+        self._fanout_config = dict(fanout or {})
+        self._fanout_clients: dict[int, list[Any]] = {}
         self._loop: asyncio.AbstractEventLoop | None = None
         self._running = False
 
@@ -52,12 +55,24 @@ class MidiToOscForwarder:
         if self._midi_in is None:
             raise RuntimeError("MIDI input is not available.")
 
-        if self._osc_client is None:
-            from pythonosc import udp_client
+        from pythonosc import udp_client
 
+        if self._osc_client is None:
             self._osc_client = udp_client.SimpleUDPClient(
                 self._osc_dst_host, self._osc_dst_port
             )
+
+        self._fanout_clients = {}
+        for controller, targets in self._fanout_config.items():
+            clients: list[Any] = []
+            for target in targets:
+                if hasattr(target, "send_message"):
+                    clients.append(target)
+                    continue
+
+                host, port = target
+                clients.append(udp_client.SimpleUDPClient(host, port))
+            self._fanout_clients[controller] = clients
 
         self._loop = asyncio.get_running_loop()
         self._midi_in.set_callback(self._handle_midi_message)
@@ -79,6 +94,7 @@ class MidiToOscForwarder:
             if close_port:
                 close_port()
 
+        self._fanout_clients = {}
         self._running = False
 
     def _handle_midi_message(
@@ -87,12 +103,10 @@ class MidiToOscForwarder:
         if not event:
             return
 
-        print("Received MIDI event:", event)
         message, _delta = event
         if not message:
             return
 
-        print("Received MIDI message:", message)
         status = message[0]
         if not _is_control_change(status):
             return
@@ -108,9 +122,13 @@ class MidiToOscForwarder:
             return
 
         def _send() -> None:
-            self._osc_client.send_message(
-                self._osc_dst_addr, [channel, controller, value]
-            )
+            payload = [channel, controller, value]
+            self._osc_client.send_message(self._osc_dst_addr, payload)
+
+            for client in self._fanout_clients.get(controller, []):
+                if client is self._osc_client:
+                    continue
+                client.send_message(self._osc_dst_addr, payload)
 
         self._loop.call_soon_threadsafe(_send)
 
@@ -228,12 +246,14 @@ class MidiOscBridge:
         osc_src_host: str = "127.0.0.1",
         osc_src_port: int = 9001,
         osc_address: str = "/mftd/cc",
+        encoder_fanout: dict[int, Sequence[tuple[str, int] | Any]] | None = None,
     ) -> None:
         self.midi_to_osc = MidiToOscForwarder(
             osc_dst_host=osc_dst_host,
             osc_dst_port=osc_dst_port,
             osc_dst_addr=osc_address,
             midi_in=midi_in,
+            fanout=encoder_fanout,
         )
         self.osc_to_midi = OscToMidiForwarder(
             osc_src_host=osc_src_host,
