@@ -19,7 +19,6 @@ class MftSysexApi:
         midi_out: MidiOutput,
         data: Dict[int, int],
     ) -> None:
-
         def _int(value: int) -> int:
             if hasattr(value, "value"):
                 return int(value.value)
@@ -56,7 +55,6 @@ class MftSysexApi:
         encoder_index: int,
         data: Dict[int, int],
     ) -> None:
-
         sysex_tag = encoder_index + 1
 
         params: List[int] = []
@@ -212,7 +210,6 @@ class MftSysexApi:
         value: int,
         channel: int = constants.MidiChannel.ROTARY_ENCODER,
     ) -> None:
-
         if not 0 <= channel <= 15:
             raise ValueError("channel must be in range 0-15")
 
