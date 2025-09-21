@@ -27,28 +27,49 @@ class TriggerMidiIn:
 @pytest.mark.asyncio
 async def test_midi_to_osc_end_to_end():
     loop = asyncio.get_running_loop()
-    messages = asyncio.Queue()
+    messages_primary = asyncio.Queue()
+    messages_secondary = asyncio.Queue()
 
-    disp = dispatcher.Dispatcher()
+    disp_primary = dispatcher.Dispatcher()
+    disp_secondary = dispatcher.Dispatcher()
 
-    def capture(address, *args):
-        messages.put_nowait((address, list(args)))
+    def capture_primary(address, *args):
+        messages_primary.put_nowait((address, list(args)))
 
-    disp.map("/mftd/cc", capture)
-    server = osc_server.AsyncIOOSCUDPServer(("127.0.0.1", 0), disp, loop)
-    transport, _ = await server.create_serve_endpoint()
-    port = transport.get_extra_info("sockname")[1]
+    def capture_secondary(address, *args):
+        messages_secondary.put_nowait((address, list(args)))
+
+    disp_primary.map("/mftd/cc", capture_primary)
+    disp_secondary.map("/mftd/cc", capture_secondary)
+
+    server_primary = osc_server.AsyncIOOSCUDPServer(("127.0.0.1", 0), disp_primary, loop)
+    transport_primary, _ = await server_primary.create_serve_endpoint()
+    port_primary = transport_primary.get_extra_info("sockname")[1]
+
+    server_secondary = osc_server.AsyncIOOSCUDPServer(
+        ("127.0.0.1", 0), disp_secondary, loop
+    )
+    transport_secondary, _ = await server_secondary.create_serve_endpoint()
+    port_secondary = transport_secondary.get_extra_info("sockname")[1]
 
     midi_in = TriggerMidiIn()
-    forwarder = MidiToOscForwarder(midi_in=midi_in, osc_dst_port=port)
+    forwarder = MidiToOscForwarder(
+        midi_in=midi_in,
+        osc_dst_ports=[port_primary, port_secondary],
+        osc_port_selector=lambda msg: port_secondary,
+    )
 
     await forwarder.start()
 
     midi_in.emit(([0xB3, 7, 120], 0.0))
 
-    address, payload = await asyncio.wait_for(messages.get(), timeout=1)
+    address, payload = await asyncio.wait_for(messages_secondary.get(), timeout=1)
     assert address == "/mftd/cc"
     assert payload == [3, 7, 120]
 
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(messages_primary.get(), timeout=0.1)
+
     await forwarder.stop()
-    transport.close()
+    transport_primary.close()
+    transport_secondary.close()
