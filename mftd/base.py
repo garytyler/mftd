@@ -4,28 +4,10 @@ from dataclasses import dataclass, fields
 from enum import IntEnum
 from typing import Any, get_type_hints, Self, Dict
 
-from mftd.util import cached_classproperty
-
 
 @dataclass
 class BaseModel:
     """Common dataclass utilities for configuration models."""
-
-    @classmethod
-    @cached_classproperty
-    def _addrs_to_names(cls):
-        result = {}
-        for f in fields(cls):
-            try:
-                addr = f.metadata["addr"]
-            except KeyError:
-                continue
-            else:
-                result[f.name] = addr
-        return result
-
-    def addr_to_name(self, addr: int) -> str:
-        return self._addrs_to_names[addr]
 
     @staticmethod
     def _coerce(value: Any, field_type: Any) -> Any:
