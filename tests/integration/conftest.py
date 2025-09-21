@@ -10,6 +10,7 @@ class FakeMidiIn(MidiInput):
     def __init__(self):
         self.messages = []
         self.opened = False
+        self.callback = None
 
     def get_port_count(self):
         return 1
@@ -31,11 +32,18 @@ class FakeMidiIn(MidiInput):
     def close_port(self):
         self.opened = False
 
+    def set_callback(self, callback, data=None):
+        self.callback = callback
+
+    def cancel_callback(self):
+        self.callback = None
+
 
 class FakeMidiOut(MidiOutput):
     def __init__(self):
         self.messages = []
         self.opened = False
+        self.callback = None
 
     def get_port_count(self):
         return 1
@@ -51,6 +59,12 @@ class FakeMidiOut(MidiOutput):
 
     def close_port(self):
         self.opened = False
+
+    def set_callback(self, callback, data=None):
+        self.callback = callback
+
+    def cancel_callback(self):
+        self.callback = None
 
 
 @pytest.fixture(autouse=True)
