@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Protocol, Sequence
 
 
@@ -35,6 +36,18 @@ class MidiInput(MidiPort, Protocol):
 
     def get_message(self) -> tuple[Sequence[int], float] | None:
         """Retrieve a MIDI message from the input port."""
+        pass
+
+    def set_callback(
+        self,
+        callback: Callable[[tuple[Sequence[int], float], object | None], None],
+        data: object | None = None,
+    ) -> None:
+        """Register a callback that receives incoming MIDI messages."""
+        pass
+
+    def cancel_callback(self) -> None:
+        """Remove the active MIDI message callback."""
         pass
 
 
