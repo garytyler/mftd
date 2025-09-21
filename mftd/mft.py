@@ -104,6 +104,8 @@ class MidiFighterTwister:
         channel: MidiChannel = MidiChannel.ROTARY_ENCODER,
     ):
         """Set an encoder value."""
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
         return self.api.set_encoder_value(
             midi_out=self.midi_output,
             encoder_index=encoder_index,
