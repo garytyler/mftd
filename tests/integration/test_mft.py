@@ -132,6 +132,16 @@ def test_set_encoder_value(mft):
     assert mft.midi_output.messages == [expected]
 
 
+def test_set_encoder_value_without_midi_out(monkeypatch, rtmidi_stub):
+    midi_in = rtmidi_stub.MidiIn()
+    monkeypatch.setattr("mftd.mft.create_midi_output", lambda: None)
+
+    mft = MidiFighterTwister(midi_in=midi_in, midi_out=None)
+
+    with pytest.raises(RuntimeError, match="MIDI output is not available."):
+        mft.set_encoder_value(encoder_index=0, value=0)
+
+
 def test_set_encoder_animation(mft):
     encoder_index = 3
     value = constants.EncoderAnimation.RGB_BRIGHTNESS_MID
