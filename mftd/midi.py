@@ -46,7 +46,10 @@ class TdMidiOutput(MidiOutput):
 
 
 def create_midi_input() -> MidiInput | None:
-    """Create a MidiInput instance that auto-connects to Midi Fighter Twister."""
+    """Create a MidiInput instance that auto-connects to Midi Fighter Twister.
+
+    Returns ``None`` if the expected device cannot be found.
+    """
     print("Creating MIDI input...")
     if is_rtmidi_available():
         import rtmidi  # type: ignore
@@ -58,16 +61,24 @@ def create_midi_input() -> MidiInput | None:
             if constants.DEVICE_NAME in midi_in.get_port_name(i):
                 midi_in.open_port(i)
                 midi_in.ignore_types(False)  # Don't ignore sysex
-                break
+                return cast(MidiInput, midi_in)
 
-        return cast(MidiInput, midi_in)
+        print(
+            "No MIDI input ports found matching",
+            f"{constants.DEVICE_NAME!r}; returning None.",
+        )
+        del midi_in
+        return None
     elif is_td_available():
         return None
     return None
 
 
 def create_midi_output() -> MidiOutput | None:
-    """Create a MidiOutput instance that auto-connects to Midi Fighter Twister."""
+    """Create a MidiOutput instance that auto-connects to Midi Fighter Twister.
+
+    Returns ``None`` if the expected device cannot be found.
+    """
     if is_rtmidi_available():
         import rtmidi  # type: ignore
 
@@ -77,9 +88,14 @@ def create_midi_output() -> MidiOutput | None:
         for i in range(midi_out.get_port_count()):
             if constants.DEVICE_NAME in midi_out.get_port_name(i):
                 midi_out.open_port(i)
-                break
+                return cast(MidiOutput, midi_out)
 
-        return cast(MidiOutput, midi_out)
+        print(
+            "No MIDI output ports found matching",
+            f"{constants.DEVICE_NAME!r}; returning None.",
+        )
+        del midi_out
+        return None
     elif is_td_available():
         return TdMidiOutput()
     return None
