@@ -9,6 +9,7 @@ dependencies = [
     "python-rtmidi>=1.5.8",
     "python-osc>=1.8",
     "pytest>=6.2.5",
+    "pytest-asyncio>=0.23",
     "pytest-mock>=3.6.1",
     "inline-importer>=0.0.4",
     "ruff>=0.13.1",
@@ -80,3 +81,8 @@ docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint.flake8-self]
 ignore-names = ["scripts._stubs"]
+
+[tool.pytest.ini_options]
+markers = [
+    "asyncio: mark a test as using asyncio.",
+]
