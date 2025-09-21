@@ -20,7 +20,7 @@ class RecordingMidiOut:
 @pytest.mark.asyncio
 async def test_osc_to_midi_end_to_end():
     midi_out = RecordingMidiOut()
-    forwarder = OscToMidiForwarder(midi_out=midi_out, listen_port=0)
+    forwarder = OscToMidiForwarder(midi_out=midi_out, osc_src_port=0)
 
     await forwarder.start()
     port = forwarder.listening_port

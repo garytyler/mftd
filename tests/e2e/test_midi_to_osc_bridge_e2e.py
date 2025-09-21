@@ -40,7 +40,7 @@ async def test_midi_to_osc_end_to_end():
     port = transport.get_extra_info("sockname")[1]
 
     midi_in = TriggerMidiIn()
-    forwarder = MidiToOscForwarder(midi_in=midi_in, osc_port=port)
+    forwarder = MidiToOscForwarder(midi_in=midi_in, osc_dst_port=port)
 
     await forwarder.start()
 

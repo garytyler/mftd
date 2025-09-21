@@ -37,7 +37,7 @@ async def test_midi_to_osc_forwards_control_change():
     forwarder = MidiToOscForwarder(
         midi_in=midi_in,
         osc_client=osc_client,
-        osc_address="/test/cc",
+        osc_dst_addr="/test/cc",
     )
 
     await forwarder.start()

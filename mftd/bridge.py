@@ -17,19 +17,31 @@ class MidiToOscForwarder:
     def __init__(
         self,
         *,
-        osc_host: str = "127.0.0.1",
-        osc_port: int = 9000,
-        osc_address: str = "/mftd/cc",
+        osc_dst_host: str = "127.0.0.1",
+        osc_dst_port: int = 9000,
+        osc_dst_addr: str = "/mftd/cc",
         midi_in: Any | None = None,
         osc_client: Any | None = None,
     ) -> None:
-        self._osc_host = osc_host
-        self._osc_port = osc_port
-        self._osc_address = osc_address
+        self._osc_dst_host = osc_dst_host
+        self._osc_dst_port = osc_dst_port
+        self._osc_dst_addr = osc_dst_addr
         self._midi_in = midi_in
         self._osc_client = osc_client
         self._loop: asyncio.AbstractEventLoop | None = None
         self._running = False
+
+    @property
+    def osc_dst_host(self):
+        return self._osc_dst_host
+
+    @property
+    def osc_dst_port(self):
+        return self._osc_dst_port
+
+    @property
+    def osc_dst_addr(self):
+        return self._osc_dst_addr
 
     async def start(self) -> None:
         if self._running:
@@ -44,7 +56,7 @@ class MidiToOscForwarder:
             from pythonosc import udp_client
 
             self._osc_client = udp_client.SimpleUDPClient(
-                self._osc_host, self._osc_port
+                self._osc_dst_host, self._osc_dst_port
             )
 
         self._loop = asyncio.get_running_loop()
@@ -75,10 +87,12 @@ class MidiToOscForwarder:
         if not event:
             return
 
+        print("Received MIDI event:", event)
         message, _delta = event
         if not message:
             return
 
+        print("Received MIDI message:", message)
         status = message[0]
         if not _is_control_change(status):
             return
@@ -95,7 +109,7 @@ class MidiToOscForwarder:
 
         def _send() -> None:
             self._osc_client.send_message(
-                self._osc_address, [channel, controller, value]
+                self._osc_dst_addr, [channel, controller, value]
             )
 
         self._loop.call_soon_threadsafe(_send)
@@ -107,20 +121,32 @@ class OscToMidiForwarder:
     def __init__(
         self,
         *,
-        listen_host: str = "127.0.0.1",
-        listen_port: int = 9001,
-        osc_address: str = "/mftd/cc",
+        osc_src_host: str = "127.0.0.1",
+        osc_src_port: int = 9001,
+        osc_src_addr: str = "/mftd/cc",
         midi_out: Any | None = None,
     ) -> None:
-        self._listen_host = listen_host
-        self._listen_port = listen_port
-        self._osc_address = osc_address
+        self._osc_listen_host = osc_src_host
+        self._osc_listen_port = osc_src_port
+        self._osc_listen_addr = osc_src_addr
         self._midi_out = midi_out
         self._loop: asyncio.AbstractEventLoop | None = None
         self._server = None
         self._transport = None
         self._protocol = None
         self._running = False
+
+    @property
+    def osc_src_host(self):
+        return self._osc_listen_host
+
+    @property
+    def osc_src_port(self):
+        return self._osc_listen_port
+
+    @property
+    def osc_src_addr(self):
+        return self._osc_listen_addr
 
     async def start(self) -> None:
         if self._running:
@@ -135,10 +161,10 @@ class OscToMidiForwarder:
 
         self._loop = asyncio.get_running_loop()
         disp = dispatcher.Dispatcher()
-        disp.map(self._osc_address, self.handle_osc_message)
+        disp.map(self._osc_listen_addr, self.handle_osc_message)
 
         self._server = osc_server.AsyncIOOSCUDPServer(
-            (self._listen_host, self._listen_port), disp, self._loop
+            (self._osc_listen_host, self._osc_listen_port), disp, self._loop
         )
         self._transport, self._protocol = await self._server.create_serve_endpoint()
         self._running = True
@@ -166,7 +192,7 @@ class OscToMidiForwarder:
         if self._midi_out is None:
             return
 
-        if address != self._osc_address:
+        if address != self._osc_listen_addr:
             return
 
         if len(args) < 3:
@@ -197,22 +223,22 @@ class MidiOscBridge:
         *,
         midi_in: Any | None = None,
         midi_out: Any | None = None,
-        osc_target_host: str = "127.0.0.1",
-        osc_target_port: int = 9000,
-        osc_listen_host: str = "127.0.0.1",
-        osc_listen_port: int = 9001,
+        osc_dst_host: str = "127.0.0.1",
+        osc_dst_port: int = 9000,
+        osc_src_host: str = "127.0.0.1",
+        osc_src_port: int = 9001,
         osc_address: str = "/mftd/cc",
     ) -> None:
         self.midi_to_osc = MidiToOscForwarder(
-            osc_host=osc_target_host,
-            osc_port=osc_target_port,
-            osc_address=osc_address,
+            osc_dst_host=osc_dst_host,
+            osc_dst_port=osc_dst_port,
+            osc_dst_addr=osc_address,
             midi_in=midi_in,
         )
         self.osc_to_midi = OscToMidiForwarder(
-            listen_host=osc_listen_host,
-            listen_port=osc_listen_port,
-            osc_address=osc_address,
+            osc_src_host=osc_src_host,
+            osc_src_port=osc_src_port,
+            osc_src_addr=osc_address,
             midi_out=midi_out,
         )
 
