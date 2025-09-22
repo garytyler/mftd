@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Sequence
-from typing import Any, Iterable
+from typing import Any
 
 from mftd.midi import create_midi_input, create_midi_output
 
@@ -18,8 +18,7 @@ class MidiToOscForwarder:
         self,
         *,
         osc_dst_host: str = "127.0.0.1",
-        osc_dst_port: int = 9000,
-        osc_dst_ports: Sequence[int] | None = None,
+        osc_dst_ports: Sequence[int] = (9000,),
         osc_dst_addr: str = "/mftd/cc",
         midi_in: Any | None = None,
         osc_client: Any | None = None,
@@ -27,8 +26,7 @@ class MidiToOscForwarder:
         osc_client_factory: Callable[[str, int], Any] | None = None,
     ) -> None:
         self._osc_dst_host = osc_dst_host
-        self._osc_dst_ports = self._normalise_ports(osc_dst_ports, osc_dst_port)
-        self._osc_dst_port = self._osc_dst_ports[0]
+        self._osc_dst_ports = self._normalise_ports(osc_dst_ports)
         self._osc_dst_addr = osc_dst_addr
         self._midi_in = midi_in
         self._osc_port_selector = osc_port_selector
@@ -40,24 +38,14 @@ class MidiToOscForwarder:
         self._running = False
 
     @staticmethod
-    def _normalise_ports(
-        osc_dst_ports: Sequence[int] | None, osc_dst_port: int
-    ) -> tuple[int, ...]:
-        ports: Iterable[int]
-        if osc_dst_ports is None:
-            ports = (osc_dst_port,)
-        else:
-            ports = osc_dst_ports
-
+    def _normalise_ports(osc_dst_ports: Sequence[int]) -> tuple[int, ...]:
         deduped: list[int] = []
-        for port in ports:
+        for port in osc_dst_ports:
             int_port = int(port)
             if int_port not in deduped:
                 deduped.append(int_port)
-
         if not deduped:
             raise ValueError("At least one OSC destination port must be provided")
-
         return tuple(deduped)
 
     @property
@@ -131,12 +119,10 @@ class MidiToOscForwarder:
         if not event:
             return
 
-        print("Received MIDI event:", event)
         message, _delta = event
         if not message:
             return
 
-        print("Received MIDI message:", message)
         status = message[0]
         if not _is_control_change(status):
             return
@@ -171,9 +157,7 @@ class MidiToOscForwarder:
 
         self._loop.call_soon_threadsafe(_send)
 
-    def _resolve_destination_port(
-        self, message: tuple[int, int, int]
-    ) -> int | None:
+    def _resolve_destination_port(self, message: tuple[int, int, int]) -> int | None:
         if len(self._osc_dst_ports) == 1:
             return self._osc_dst_ports[0]
 
@@ -305,8 +289,7 @@ class MidiOscBridge:
         midi_in: Any | None = None,
         midi_out: Any | None = None,
         osc_dst_host: str = "127.0.0.1",
-        osc_dst_port: int = 9000,
-        osc_dst_ports: Sequence[int] | None = None,
+        osc_dst_ports: Sequence[int] = (9000,),
         osc_src_host: str = "127.0.0.1",
         osc_src_port: int = 9001,
         osc_address: str = "/mftd/cc",
@@ -315,7 +298,6 @@ class MidiOscBridge:
     ) -> None:
         self.midi_to_osc = MidiToOscForwarder(
             osc_dst_host=osc_dst_host,
-            osc_dst_port=osc_dst_port,
             osc_dst_ports=osc_dst_ports,
             osc_dst_addr=osc_address,
             midi_in=midi_in,

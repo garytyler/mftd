@@ -2,54 +2,54 @@
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 
+from mftd import MidiChannel
 from mftd.bridge import MidiOscBridge
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--osc-dst-host",
-        default="127.0.0.1",
-        help="OSC destination host (default: %(default)s)",
-    )
-    parser.add_argument(
-        "--osc-dst-port",
-        dest="osc_dst_ports",
-        type=int,
-        action="append",
-        default=[9005],
-        help=(
-            "OSC destination port. Repeat the option to forward to multiple "
-            "ports (default: %(default)s)."
-        ),
-    )
-    parser.add_argument(
-        "--osc-src-host",
-        default="127.0.0.1",
-        help="OSC source host to listen on (default: %(default)s)",
-    )
-    parser.add_argument(
-        "--osc-src-port",
-        type=int,
-        default=9006,
-        help="OSC source port to listen on (default: %(default)s)",
-    )
-    return parser.parse_args()
+class MessageRouter:
+    basePort = 9000
+    targetNumsToEncoderIndexes = {
+        0: {10, 11, 14, 15},
+        1: {0, 4, 8, 12},
+        2: {1, 5, 9, 13},
+        3: {2, 6},
+        4: {3, 7},
+    }
+    encoderIndexesToTargetNums = {
+        e: t for t, encoders in targetNumsToEncoderIndexes.items() for e in encoders
+    }
+    encoderChannels = [
+        MidiChannel.ROTARY_ENCODER,
+    ]
+
+    @classmethod
+    def getPort(cls, message) -> int | None:
+        channel, port, value = message
+        if (
+            channel
+            in [
+                MidiChannel.ROTARY_ENCODER,
+                MidiChannel.SWITCH_AND_COLOR,
+                MidiChannel.SHIFT,
+            ]
+            and port in cls.encoderIndexesToTargetNums
+        ):
+            return cls.basePort + cls.encoderIndexesToTargetNums[port]
+        elif channel == MidiChannel.SYSTEM:
+            return cls.basePort
+        else:
+            return None
 
 
 async def main() -> None:
-    args = parse_args()
-    osc_dst_ports = args.osc_dst_ports or [9005]
-
     bridge = MidiOscBridge(
-        osc_dst_host=args.osc_dst_host,
-        osc_dst_port=osc_dst_ports[0],
-        osc_dst_ports=osc_dst_ports,
-        osc_src_host=args.osc_src_host,
-        osc_src_port=args.osc_src_port,
+        osc_dst_host="127.0.0.1",
+        osc_dst_ports=[9000, 9001, 9002, 9003, 9004],
+        osc_src_host="127.0.0.1",
+        osc_src_port=9005,
+        osc_port_selector=MessageRouter.getPort,
     )
 
     osc_ports_desc = ", ".join(str(port) for port in bridge.midi_to_osc.osc_dst_ports)
