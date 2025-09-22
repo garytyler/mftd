@@ -1,9 +1,6 @@
 import asyncio
 
-import pytest
-
-pythonosc = pytest.importorskip("pythonosc")
-udp_client = pythonosc.udp_client
+from pythonosc.udp_client import SimpleUDPClient
 
 from mftd.bridge import OscToMidiForwarder
 
@@ -27,7 +24,7 @@ async def _run_osc_to_midi_end_to_end() -> None:
     port = forwarder.listening_port
     assert port is not None
 
-    client = udp_client.SimpleUDPClient("127.0.0.1", port)
+    client = SimpleUDPClient("127.0.0.1", port)
     client.send_message("/mftd/cc", [4, 22, 45])
 
     message = await asyncio.wait_for(midi_out.messages.get(), timeout=1)

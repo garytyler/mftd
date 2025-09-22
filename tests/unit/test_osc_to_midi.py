@@ -1,9 +1,5 @@
 import asyncio
 
-import pytest
-
-pytest.importorskip("pythonosc")
-
 from mftd.bridge import OscToMidiForwarder
 
 
