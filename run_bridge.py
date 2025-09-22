@@ -51,17 +51,19 @@ class MessageRouter:
     @classmethod
     def getAddress(cls, message, address) -> str | None:
         channel, index, value = message
+        if channel == MidiChannel.SYSTEM:
+            return address
         mapping = cls.interpreter.RenamesByCc[f"ch{channel + 1}ctrl{index + 1}"]
+        if "loc" in mapping and mapping["loc"].startswith("s"):
+            return address
         mapping["index"] = index
         mapping["loc2"] = f"row{index // 4}col{index % 4}u"
         targetNum = cls.encoderIndexesToTargetNums[index]
         switchName = mapping["target"][1::]
         role = mapping["role"].split("_")[1]
         func = MessageInterpreter.MidiRoleToFunc[role]
-        new_address = (
-            address + "/" + str(targetNum) + "/" + switchName + "/" + role + "/" + func
-        )
-        return new_address
+        address = "/".join([address, str(targetNum), switchName, role, func])
+        return address
 
 
 RETRYABLE_START_ERRORS: tuple[Callable[[Exception], bool], ...] = (
@@ -100,6 +102,7 @@ async def main() -> None:
         osc_dst_ports=[9000, 9001, 9002, 9003, 9004],
         osc_src_host="127.0.0.1",
         osc_src_port=9005,
+        osc_address="/mftd/cc",
         osc_port_selector=MessageRouter.getPort,
         osc_addr_resolver=MessageRouter.getAddress,
     )
