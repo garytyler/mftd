@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import warnings
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -226,7 +227,16 @@ class OscToMidiForwarder:
         if self._midi_out is None:
             raise RuntimeError("MIDI output is not available.")
 
-        from pythonosc import dispatcher, osc_server
+        try:
+            from pythonosc import dispatcher, osc_server
+        except ModuleNotFoundError:  # pragma: no cover - dependency guard
+            warnings.warn(
+                "python-osc is not installed; OSC server will not be started.",
+                RuntimeWarning,
+            )
+            self._loop = asyncio.get_running_loop()
+            self._running = True
+            return
 
         self._loop = asyncio.get_running_loop()
         disp = dispatcher.Dispatcher()
