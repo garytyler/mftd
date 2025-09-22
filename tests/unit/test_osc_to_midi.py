@@ -1,4 +1,8 @@
+import asyncio
+
 import pytest
+
+pytest.importorskip("pythonosc")
 
 from mftd.bridge import OscToMidiForwarder
 
@@ -15,8 +19,7 @@ class FakeMidiOut:
         self.closed = True
 
 
-@pytest.mark.asyncio
-async def test_osc_to_midi_translates_cc_messages():
+async def _run_osc_to_midi_translates_cc_messages() -> None:
     midi_out = FakeMidiOut()
     forwarder = OscToMidiForwarder(midi_out=midi_out)
 
@@ -28,3 +31,7 @@ async def test_osc_to_midi_translates_cc_messages():
 
     await forwarder.stop()
     assert midi_out.closed
+
+
+def test_osc_to_midi_translates_cc_messages() -> None:
+    asyncio.run(_run_osc_to_midi_translates_cc_messages())

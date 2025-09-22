@@ -1,7 +1,5 @@
 import asyncio
 
-import pytest
-
 from mftd.bridge import MidiToOscForwarder
 
 
@@ -32,8 +30,7 @@ class FakeOscClient:
         self.sent.append((address, payload))
 
 
-@pytest.mark.asyncio
-async def test_midi_to_osc_forwards_control_change():
+async def _run_forward_control_change_test() -> None:
     midi_in = FakeMidiIn()
     osc_client = FakeOscClient()
     forwarder = MidiToOscForwarder(
@@ -55,8 +52,7 @@ async def test_midi_to_osc_forwards_control_change():
     assert midi_in.closed
 
 
-@pytest.mark.asyncio
-async def test_midi_to_osc_routes_to_selected_port():
+async def _run_routes_to_selected_port_test() -> None:
     midi_in = FakeMidiIn()
     created_clients: dict[int, FakeOscClient] = {}
 
@@ -89,3 +85,11 @@ async def test_midi_to_osc_routes_to_selected_port():
     assert created_clients[9010].sent == []
 
     await forwarder.stop()
+
+
+def test_midi_to_osc_forwards_control_change() -> None:
+    asyncio.run(_run_forward_control_change_test())
+
+
+def test_midi_to_osc_routes_to_selected_port() -> None:
+    asyncio.run(_run_routes_to_selected_port_test())

@@ -1,7 +1,9 @@
 import asyncio
 
 import pytest
-from pythonosc import udp_client
+
+pythonosc = pytest.importorskip("pythonosc")
+udp_client = pythonosc.udp_client
 
 from mftd.bridge import OscToMidiForwarder
 
@@ -17,8 +19,7 @@ class RecordingMidiOut:
         pass
 
 
-@pytest.mark.asyncio
-async def test_osc_to_midi_end_to_end():
+async def _run_osc_to_midi_end_to_end() -> None:
     midi_out = RecordingMidiOut()
     forwarder = OscToMidiForwarder(midi_out=midi_out, osc_src_port=0)
 
@@ -33,3 +34,7 @@ async def test_osc_to_midi_end_to_end():
     assert message == [0xB4, 22, 45]
 
     await forwarder.stop()
+
+
+def test_osc_to_midi_end_to_end() -> None:
+    asyncio.run(_run_osc_to_midi_end_to_end())

@@ -85,18 +85,22 @@ class MidiToOscForwarder:
         if self._midi_in is None:
             raise RuntimeError("MIDI input is not available.")
 
-        if self._osc_client_factory is None:
-            from pythonosc import udp_client
+        missing_ports = [
+            port for port in self._osc_dst_ports if port not in self._osc_clients
+        ]
 
-            def default_factory(host: str, port: int) -> Any:
-                return udp_client.SimpleUDPClient(host, port)
+        if missing_ports:
+            if self._osc_client_factory is None:
+                from pythonosc import udp_client
 
-            factory = default_factory
-        else:
-            factory = self._osc_client_factory
+                def default_factory(host: str, port: int) -> Any:
+                    return udp_client.SimpleUDPClient(host, port)
 
-        for port in self._osc_dst_ports:
-            if port not in self._osc_clients:
+                factory = default_factory
+            else:
+                factory = self._osc_client_factory
+
+            for port in missing_ports:
                 self._osc_clients[port] = factory(self._osc_dst_host, port)
 
         self._loop = asyncio.get_running_loop()

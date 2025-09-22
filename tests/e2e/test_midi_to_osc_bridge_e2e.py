@@ -1,7 +1,10 @@
 import asyncio
 
 import pytest
-from pythonosc import dispatcher, osc_server
+
+pythonosc = pytest.importorskip("pythonosc")
+dispatcher = pythonosc.dispatcher
+osc_server = pythonosc.osc_server
 
 from mftd.bridge import MidiToOscForwarder
 
@@ -24,8 +27,7 @@ class TriggerMidiIn:
             self.callback(message, None)
 
 
-@pytest.mark.asyncio
-async def test_midi_to_osc_end_to_end():
+async def _run_midi_to_osc_end_to_end() -> None:
     loop = asyncio.get_running_loop()
     messages_primary = asyncio.Queue()
     messages_secondary = asyncio.Queue()
@@ -73,3 +75,7 @@ async def test_midi_to_osc_end_to_end():
     await forwarder.stop()
     transport_primary.close()
     transport_secondary.close()
+
+
+def test_midi_to_osc_end_to_end() -> None:
+    asyncio.run(_run_midi_to_osc_end_to_end())
