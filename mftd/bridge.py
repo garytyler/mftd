@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, Iterable
 
 from mftd.midi import create_midi_input, create_midi_output
 
@@ -19,17 +19,46 @@ class MidiToOscForwarder:
         *,
         osc_dst_host: str = "127.0.0.1",
         osc_dst_port: int = 9000,
+        osc_dst_ports: Sequence[int] | None = None,
         osc_dst_addr: str = "/mftd/cc",
         midi_in: Any | None = None,
         osc_client: Any | None = None,
+        osc_port_selector: Callable[[tuple[int, int, int]], int] | None = None,
+        osc_client_factory: Callable[[str, int], Any] | None = None,
     ) -> None:
         self._osc_dst_host = osc_dst_host
-        self._osc_dst_port = osc_dst_port
+        self._osc_dst_ports = self._normalise_ports(osc_dst_ports, osc_dst_port)
+        self._osc_dst_port = self._osc_dst_ports[0]
         self._osc_dst_addr = osc_dst_addr
         self._midi_in = midi_in
-        self._osc_client = osc_client
+        self._osc_port_selector = osc_port_selector
+        self._osc_client_factory = osc_client_factory
+        self._osc_clients: dict[int, Any] = {}
+        if osc_client is not None:
+            self._osc_clients[self._osc_dst_ports[0]] = osc_client
         self._loop: asyncio.AbstractEventLoop | None = None
         self._running = False
+
+    @staticmethod
+    def _normalise_ports(
+        osc_dst_ports: Sequence[int] | None, osc_dst_port: int
+    ) -> tuple[int, ...]:
+        ports: Iterable[int]
+        if osc_dst_ports is None:
+            ports = (osc_dst_port,)
+        else:
+            ports = osc_dst_ports
+
+        deduped: list[int] = []
+        for port in ports:
+            int_port = int(port)
+            if int_port not in deduped:
+                deduped.append(int_port)
+
+        if not deduped:
+            raise ValueError("At least one OSC destination port must be provided")
+
+        return tuple(deduped)
 
     @property
     def osc_dst_host(self):
@@ -37,7 +66,11 @@ class MidiToOscForwarder:
 
     @property
     def osc_dst_port(self):
-        return self._osc_dst_port
+        return self._osc_dst_ports[0]
+
+    @property
+    def osc_dst_ports(self) -> tuple[int, ...]:
+        return self._osc_dst_ports
 
     @property
     def osc_dst_addr(self):
@@ -52,12 +85,23 @@ class MidiToOscForwarder:
         if self._midi_in is None:
             raise RuntimeError("MIDI input is not available.")
 
-        if self._osc_client is None:
-            from pythonosc import udp_client
+        missing_ports = [
+            port for port in self._osc_dst_ports if port not in self._osc_clients
+        ]
 
-            self._osc_client = udp_client.SimpleUDPClient(
-                self._osc_dst_host, self._osc_dst_port
-            )
+        if missing_ports:
+            if self._osc_client_factory is None:
+                from pythonosc import udp_client
+
+                def default_factory(host: str, port: int) -> Any:
+                    return udp_client.SimpleUDPClient(host, port)
+
+                factory = default_factory
+            else:
+                factory = self._osc_client_factory
+
+            for port in missing_ports:
+                self._osc_clients[port] = factory(self._osc_dst_host, port)
 
         self._loop = asyncio.get_running_loop()
         self._midi_in.set_callback(self._handle_midi_message)
@@ -104,15 +148,56 @@ class MidiToOscForwarder:
         controller = int(message[1]) & 0x7F
         value = int(message[2]) & 0x7F
 
-        if self._loop is None or self._osc_client is None:
+        if self._loop is None or not self._osc_clients:
+            return
+
+        payload = [channel, controller, value]
+        target_port = self._resolve_destination_port((channel, controller, value))
+        if target_port is None:
+            return
+
+        client = self._osc_clients.get(target_port)
+        if client is None:
+            print(
+                "OSC port selector returned unknown port:",
+                target_port,
+                "available ports:",
+                sorted(self._osc_clients.keys()),
+            )
             return
 
         def _send() -> None:
-            self._osc_client.send_message(
-                self._osc_dst_addr, [channel, controller, value]
-            )
+            try:
+                client.send_message(self._osc_dst_addr, payload)
+            except Exception as exc:  # pragma: no cover - defensive logging
+                print("Failed to send OSC message:", payload)
+                print(exc)
 
         self._loop.call_soon_threadsafe(_send)
+
+    def _resolve_destination_port(
+        self, message: tuple[int, int, int]
+    ) -> int | None:
+        if len(self._osc_dst_ports) == 1:
+            return self._osc_dst_ports[0]
+
+        if self._osc_port_selector is None:
+            return self._osc_dst_ports[0]
+
+        try:
+            selected_port = self._osc_port_selector(message)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            print("OSC port selector raised an exception:", exc)
+            return None
+
+        if selected_port is None:
+            return None
+
+        try:
+            return int(selected_port)
+        except (TypeError, ValueError):
+            print("OSC port selector returned an invalid port:", selected_port)
+            return None
 
 
 class OscToMidiForwarder:
@@ -203,7 +288,11 @@ class OscToMidiForwarder:
         value = int(args[2]) & 0x7F
 
         status = 0xB0 | channel
-        self._midi_out.send_message([status, controller, value])
+        try:
+            self._midi_out.send_message([status, controller, value])
+        except Exception as exc:  # pragma: no cover - defensive logging
+            print("Failed to send MIDI message:", [status, controller, value])
+            print(exc)
 
     @property
     def listening_port(self) -> int | None:
@@ -225,15 +314,21 @@ class MidiOscBridge:
         midi_out: Any | None = None,
         osc_dst_host: str = "127.0.0.1",
         osc_dst_port: int = 9000,
+        osc_dst_ports: Sequence[int] | None = None,
         osc_src_host: str = "127.0.0.1",
         osc_src_port: int = 9001,
         osc_address: str = "/mftd/cc",
+        osc_port_selector: Callable[[tuple[int, int, int]], int] | None = None,
+        osc_client_factory: Callable[[str, int], Any] | None = None,
     ) -> None:
         self.midi_to_osc = MidiToOscForwarder(
             osc_dst_host=osc_dst_host,
             osc_dst_port=osc_dst_port,
+            osc_dst_ports=osc_dst_ports,
             osc_dst_addr=osc_address,
             midi_in=midi_in,
+            osc_port_selector=osc_port_selector,
+            osc_client_factory=osc_client_factory,
         )
         self.osc_to_midi = OscToMidiForwarder(
             osc_src_host=osc_src_host,

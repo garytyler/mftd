@@ -20,6 +20,20 @@ mftMidiSystemIn  (midiinCHOP)
 mftMidiEvent     (midieventDAT)
 ```
 
+### MIDI ↔ OSC Bridge
+
+The `MidiToOscForwarder` and `MidiOscBridge` helpers make it easy to forward
+incoming MIDI Control Change events to OSC receivers. Multiple OSC destination
+ports can be configured by passing a sequence to `osc_dst_ports` along with an
+optional `osc_port_selector` callback. The selector receives the decoded
+`(channel, controller, value)` tuple and chooses the destination port for each
+message, enabling per-controller routing across OSC services.
+
+Use `run_bridge.py` to run the bidirectional bridge from the command line. The
+script accepts repeated `--osc-dst-port` options to target multiple receivers
+and will keep retrying when the Midi Fighter Twister is not yet connected,
+making it suitable for running alongside live performance setups.
+
 Ensure that the `mftMidiSystemIn` CHOP is configured to your device and both
 operators have their **Active** parameter enabled. Incoming SysEx messages will
 then appear in the `mftMidiEvent` table so calls like
