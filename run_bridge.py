@@ -54,7 +54,6 @@ class MessageRouter:
         mapping = cls.interpreter.RenamesByCc[f"ch{channel + 1}ctrl{index + 1}"]
         mapping["index"] = index
         mapping["loc2"] = f"row{index // 4}col{index % 4}u"
-        print(mapping)
         targetNum = cls.encoderIndexesToTargetNums[index]
         switchName = mapping["target"][1::]
         role = mapping["role"].split("_")[1]
@@ -62,22 +61,7 @@ class MessageRouter:
         new_address = (
             address + "/" + str(targetNum) + "/" + switchName + "/" + role + "/" + func
         )
-        print(new_address)
         return new_address
-        # if (
-        #     channel
-        #     in [
-        #         MidiChannel.ROTARY_ENCODER,
-        #         MidiChannel.SWITCH_AND_COLOR,
-        #         MidiChannel.SHIFT,
-        #     ]
-        #     and port in cls.encoderIndexesToTargetNums
-        # ):
-        #     return cls.basePort + cls.encoderIndexesToTargetNums[port]
-        # elif channel == MidiChannel.SYSTEM:
-        #     return cls.basePort
-        # else:
-        #     return None
 
 
 RETRYABLE_START_ERRORS: tuple[Callable[[Exception], bool], ...] = (

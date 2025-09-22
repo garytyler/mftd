@@ -23,6 +23,8 @@ class MessageInterpreter:
         "lu": "scrub",
         "ru": "speed",
         "rd": "aux",
+        "lb": "button",
+        "rb": "button",
     }
     MidiFuncToRole = {v: k for k, v in MidiRoleToFunc.items()}
 

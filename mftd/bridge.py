@@ -197,7 +197,7 @@ class MidiToOscForwarder:
         try:
             selected_address = self._osc_address_selector(message, base_address)
         except Exception as exc:  # pragma: no cover - defensive logging
-            print("OSC address selector raised an exception:", exc)
+            print("OSC address resolver raised an exception:", exc)
             return base_address
 
         if selected_address is None:
@@ -207,7 +207,7 @@ class MidiToOscForwarder:
             return str(selected_address)
         except Exception:  # pragma: no cover - defensive logging
             print(
-                "OSC address selector returned an invalid address:",
+                "OSC address resolver returned an invalid address:",
                 selected_address,
             )
             return base_address
