@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Callable
 
 from mftd import MidiChannel
 from mftd.bridge import MidiOscBridge
