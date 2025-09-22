@@ -23,7 +23,7 @@ class MidiToOscForwarder:
         midi_in: Any | None = None,
         osc_client: Any | None = None,
         osc_port_selector: Callable[[tuple[int, int, int]], int] | None = None,
-        osc_address_selector: Callable[[tuple[int, int, int], str], str] | None = None,
+        osc_addr_resolver: Callable[[tuple[int, int, int], str], str] | None = None,
         osc_client_factory: Callable[[str, int], Any] | None = None,
     ) -> None:
         self._osc_dst_host = osc_dst_host
@@ -31,7 +31,7 @@ class MidiToOscForwarder:
         self._osc_dst_addr = osc_dst_addr
         self._midi_in = midi_in
         self._osc_port_selector = osc_port_selector
-        self._osc_address_selector = osc_address_selector
+        self._osc_address_selector = osc_addr_resolver
         self._osc_client_factory = osc_client_factory
         self._osc_clients: dict[int, Any] = {}
         if osc_client is not None:
@@ -155,9 +155,7 @@ class MidiToOscForwarder:
             )
             return
 
-        target_address = self._resolve_destination_address(
-            message, self._osc_dst_addr
-        )
+        target_address = self._resolve_destination_address(message, self._osc_dst_addr)
 
         def _send() -> None:
             try:
@@ -334,7 +332,7 @@ class MidiOscBridge:
         osc_src_port: int = 9001,
         osc_address: str = "/mftd/cc",
         osc_port_selector: Callable[[tuple[int, int, int]], int] | None = None,
-        osc_address_selector: Callable[[tuple[int, int, int], str], str] | None = None,
+        osc_addr_resolver: Callable[[tuple[int, int, int], str], str] | None = None,
         osc_client_factory: Callable[[str, int], Any] | None = None,
     ) -> None:
         self.midi_to_osc = MidiToOscForwarder(
@@ -343,7 +341,7 @@ class MidiOscBridge:
             osc_dst_addr=osc_address,
             midi_in=midi_in,
             osc_port_selector=osc_port_selector,
-            osc_address_selector=osc_address_selector,
+            osc_addr_resolver=osc_addr_resolver,
             osc_client_factory=osc_client_factory,
         )
         self.osc_to_midi = OscToMidiForwarder(

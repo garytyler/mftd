@@ -102,7 +102,7 @@ async def _run_modifies_address_with_selector_test() -> None:
         midi_in=midi_in,
         osc_client=osc_client,
         osc_dst_addr="/base",
-        osc_address_selector=selector,
+        osc_addr_resolver=selector,
     )
 
     await forwarder.start()
