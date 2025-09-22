@@ -54,15 +54,29 @@ async def main() -> None:
 
     osc_ports_desc = ", ".join(str(port) for port in bridge.midi_to_osc.osc_dst_ports)
     print(
-        "Bridge running — MIDI CC → OSC on "
+        "Starting bridge — MIDI CC → OSC on "
         f"{bridge.midi_to_osc.osc_dst_host}:{osc_ports_desc}, "
         "OSC CC → MIDI on "
-        f"{bridge.osc_to_midi.osc_src_host}:{bridge.osc_to_midi.osc_src_port}.\n"
-        "Press Ctrl+C to stop."
+        f"{bridge.osc_to_midi.osc_src_host}:{bridge.osc_to_midi.osc_src_port}."
     )
 
     try:
         await bridge.start()
+    except OSError as exc:
+        await bridge.stop()
+        print(
+            "Failed to start bridge due to unavailable port(s):",
+            exc,
+        )
+        raise SystemExit(1) from exc
+    except Exception as exc:
+        await bridge.stop()
+        print("Failed to start bridge:", exc)
+        raise SystemExit(1) from exc
+
+    print("Bridge running. Press Ctrl+C to stop.")
+
+    try:
         while True:
             await asyncio.sleep(1)
     except KeyboardInterrupt:
