@@ -87,9 +87,45 @@ async def _run_routes_to_selected_port_test() -> None:
     await forwarder.stop()
 
 
+async def _run_modifies_address_with_selector_test() -> None:
+    midi_in = FakeMidiIn()
+    osc_client = FakeOscClient()
+
+    seen: list[tuple[tuple[int, int, int], str]] = []
+
+    def selector(message: tuple[int, int, int], base: str) -> str:
+        seen.append((message, base))
+        channel, controller, value = message
+        return f"{base}/{channel}/{controller}/{value}"
+
+    forwarder = MidiToOscForwarder(
+        midi_in=midi_in,
+        osc_client=osc_client,
+        osc_dst_addr="/base",
+        osc_address_selector=selector,
+    )
+
+    await forwarder.start()
+    assert midi_in.callback is not None
+
+    midi_in.callback(([0xB3, 64, 127], 0.0), None)
+    await asyncio.sleep(0)
+
+    assert seen == [((3, 64, 127), "/base")]
+    assert osc_client.sent == [
+        ("/base/3/64/127", [3, 64, 127]),
+    ]
+
+    await forwarder.stop()
+
+
 def test_midi_to_osc_forwards_control_change() -> None:
     asyncio.run(_run_forward_control_change_test())
 
 
 def test_midi_to_osc_routes_to_selected_port() -> None:
     asyncio.run(_run_routes_to_selected_port_test())
+
+
+def test_midi_to_osc_modifies_address_with_selector() -> None:
+    asyncio.run(_run_modifies_address_with_selector_test())

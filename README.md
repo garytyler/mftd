@@ -27,7 +27,11 @@ incoming MIDI Control Change events to OSC receivers. Multiple OSC destination
 ports can be configured by passing a sequence to `osc_dst_ports` along with an
 optional `osc_port_selector` callback. The selector receives the decoded
 `(channel, controller, value)` tuple and chooses the destination port for each
-message, enabling per-controller routing across OSC services.
+message, enabling per-controller routing across OSC services. When you need to
+customise the OSC address on a per-message basis you can provide an
+`osc_address_selector` callback. It receives the same message tuple together
+with the base address and should return the address to send to for that
+message.
 
 Use `run_bridge.py` to run the bidirectional bridge from the command line. The
 script will keep retrying when the Midi Fighter Twister is not yet connected,
