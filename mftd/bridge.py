@@ -226,13 +226,14 @@ class OscToMidiForwarder:
         if self._midi_out is None:
             raise RuntimeError("MIDI output is not available.")
 
-        from pythonosc import dispatcher, osc_server
+        from pythonosc.dispatcher import Dispatcher
+        from pythonosc.osc_server import AsyncIOOSCUDPServer
 
         self._loop = asyncio.get_running_loop()
-        disp = dispatcher.Dispatcher()
+        disp = Dispatcher()
         disp.map(self._osc_listen_addr, self.handle_osc_message)
 
-        self._server = osc_server.AsyncIOOSCUDPServer(
+        self._server = AsyncIOOSCUDPServer(
             (self._osc_listen_host, self._osc_listen_port), disp, self._loop
         )
         self._transport, self._protocol = await self._server.create_serve_endpoint()
