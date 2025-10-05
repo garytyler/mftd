@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
-from typing import Callable
+from contextlib import suppress
+from typing import Callable, Sequence
 
 from mftd import MidiChannel
 from mftd.bridge import MidiOscBridge
@@ -94,9 +96,31 @@ async def start_bridge_with_retry(
             raise
         else:
             break
+async def _handle_readiness_probe(
+    reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+) -> None:
+    del reader  # We do not expect any input.
+    try:
+        writer.write(b"ready\n")
+        await writer.drain()
+    finally:
+        writer.close()
+        with suppress(Exception):
+            await writer.wait_closed()
 
 
-async def main() -> None:
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the MIDI⇄OSC bridge")
+    parser.add_argument(
+        "--ready-tcp-port",
+        type=int,
+        help="Expose a readiness TCP endpoint on the given port",
+    )
+    return parser.parse_args(argv)
+
+
+async def main(argv: Sequence[str] | None = None) -> None:
+    args = _parse_args(argv)
     bridge = MidiOscBridge(
         osc_dst_host="127.0.0.1",
         osc_dst_ports=[9000, 9001, 9002, 9003, 9004],
@@ -115,28 +139,49 @@ async def main() -> None:
         f"{bridge.osc_to_midi.osc_src_host}:{bridge.osc_to_midi.osc_src_port}."
     )
 
-    try:
-        await start_bridge_with_retry(bridge)
-    except OSError as exc:
-        await bridge.stop()
-        print(
-            "Failed to start bridge due to unavailable port(s):",
-            exc,
-        )
-        raise SystemExit(1) from exc
-    except Exception as exc:
-        await bridge.stop()
-        print("Failed to start bridge:", exc)
-        raise SystemExit(1) from exc
-
-    print("Bridge running. Press Ctrl+C to stop.")
+    readiness_server: asyncio.base_events.Server | None = None
 
     try:
-        while True:
-            await asyncio.sleep(1)
-    except KeyboardInterrupt:
-        print("\nStopping bridge…")
+        try:
+            await start_bridge_with_retry(bridge)
+        except OSError as exc:
+            print(
+                "Failed to start bridge due to unavailable port(s):",
+                exc,
+            )
+            raise SystemExit(1) from exc
+        except Exception as exc:
+            print("Failed to start bridge:", exc)
+            raise SystemExit(1) from exc
+
+        if args.ready_tcp_port is not None:
+            try:
+                readiness_server = await asyncio.start_server(
+                    _handle_readiness_probe,
+                    host="127.0.0.1",
+                    port=args.ready_tcp_port,
+                )
+            except Exception as exc:
+                print(
+                    "Failed to start readiness endpoint on port",
+                    args.ready_tcp_port,
+                    ":",
+                    exc,
+                )
+                raise SystemExit(1) from exc
+
+        print("Bridge running. Press Ctrl+C to stop.")
+
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            print("\nStopping bridge…")
     finally:
+        if readiness_server is not None:
+            readiness_server.close()
+            with suppress(Exception):
+                await readiness_server.wait_closed()
         await bridge.stop()
 
 
