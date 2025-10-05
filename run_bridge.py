@@ -97,30 +97,60 @@ async def start_bridge_with_retry(
             break
 READINESS_HOST = "127.0.0.1"
 READINESS_PORT = 9090
-_HTTP_READY_RESPONSE = (
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Type: text/plain; charset=utf-8\r\n"
-    "Content-Length: 6\r\n"
-    "Connection: close\r\n"
-    "\r\n"
-    "ready\n"
-).encode("ascii")
 
 
-async def _handle_readiness_probe(
-    reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-) -> None:
-    try:
-        try:
-            await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), timeout=0.5)
-        except (asyncio.IncompleteReadError, asyncio.LimitOverrunError, asyncio.TimeoutError):
-            pass
-        writer.write(_HTTP_READY_RESPONSE)
-        await writer.drain()
-    finally:
-        writer.close()
+class HttpReadinessProbe:
+    _HTTP_READY_RESPONSE = (
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        "Content-Length: 6\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "ready\n"
+    ).encode("ascii")
+
+    def __init__(self, host: str = READINESS_HOST, port: int = READINESS_PORT) -> None:
+        self._host = host
+        self._port = port
+        self._server: asyncio.base_events.Server | None = None
+
+    async def start(self) -> None:
+        if self._server is not None:
+            return
+
+        self._server = await asyncio.start_server(
+            self._handle_readiness_probe,
+            host=self._host,
+            port=self._port,
+        )
+
+    async def stop(self) -> None:
+        if self._server is None:
+            return
+
+        self._server.close()
         with suppress(Exception):
-            await writer.wait_closed()
+            await self._server.wait_closed()
+        self._server = None
+
+    async def _handle_readiness_probe(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        try:
+            try:
+                await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), timeout=0.5)
+            except (
+                asyncio.IncompleteReadError,
+                asyncio.LimitOverrunError,
+                asyncio.TimeoutError,
+            ):
+                pass
+            writer.write(self._HTTP_READY_RESPONSE)
+            await writer.drain()
+        finally:
+            writer.close()
+            with suppress(Exception):
+                await writer.wait_closed()
 
 
 async def main(argv: Sequence[str] | None = None) -> None:
@@ -142,7 +172,7 @@ async def main(argv: Sequence[str] | None = None) -> None:
         f"{bridge.osc_to_midi.osc_src_host}:{bridge.osc_to_midi.osc_src_port}."
     )
 
-    readiness_server: asyncio.base_events.Server | None = None
+    readiness_probe = HttpReadinessProbe()
 
     try:
         try:
@@ -158,11 +188,7 @@ async def main(argv: Sequence[str] | None = None) -> None:
             raise SystemExit(1) from exc
 
         try:
-            readiness_server = await asyncio.start_server(
-                _handle_readiness_probe,
-                host=READINESS_HOST,
-                port=READINESS_PORT,
-            )
+            await readiness_probe.start()
         except Exception as exc:
             print(
                 "Failed to start readiness endpoint on",
@@ -180,10 +206,7 @@ async def main(argv: Sequence[str] | None = None) -> None:
         except KeyboardInterrupt:
             print("\nStopping bridge…")
     finally:
-        if readiness_server is not None:
-            readiness_server.close()
-            with suppress(Exception):
-                await readiness_server.wait_closed()
+        await readiness_probe.stop()
         await bridge.stop()
 
 
