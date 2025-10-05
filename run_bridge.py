@@ -1,4 +1,4 @@
-"""Helper script to run the MIDI↔OSC bridge."""
+"""Helper script to run the MIDI<->OSC bridge."""
 
 from __future__ import annotations
 

@@ -288,8 +288,6 @@ class OscToMidiForwarder:
         self._running = False
 
     def handle_osc_message(self, address: str, *args: Any) -> None:
-        print("handle_osc_message", args)
-
         if self._midi_out is None:
             return
 
