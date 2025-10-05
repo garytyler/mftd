@@ -4,7 +4,12 @@ import socket
 import pytest
 
 import run_bridge
-from run_bridge import main, start_bridge_with_retry
+from run_bridge import (
+    READINESS_HOST,
+    READINESS_PORT,
+    main,
+    start_bridge_with_retry,
+)
 
 
 class DummyBridge:
@@ -55,12 +60,6 @@ def test_start_bridge_with_retry_propagates_other_errors(monkeypatch):
     assert bridge.stop_calls == 1
 
 
-def _get_unused_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
-
-
 def test_main_exposes_readiness_probe(monkeypatch):
     async def exercise() -> None:
         start_event = asyncio.Event()
@@ -75,27 +74,38 @@ def test_main_exposes_readiness_probe(monkeypatch):
         monkeypatch.setattr(run_bridge.MidiOscBridge, "start", fake_start)
         monkeypatch.setattr(run_bridge.MidiOscBridge, "stop", fake_stop)
 
-        port = _get_unused_port()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            try:
+                sock.bind((READINESS_HOST, READINESS_PORT))
+            except OSError as exc:
+                pytest.skip(
+                    f"Readiness port {READINESS_PORT} unavailable for test: {exc}"
+                )
 
         with pytest.raises(OSError):
-            await asyncio.open_connection("127.0.0.1", port)
+            await asyncio.open_connection(READINESS_HOST, READINESS_PORT)
 
-        main_task = asyncio.create_task(main(["--ready-tcp-port", str(port)]))
+        main_task = asyncio.create_task(main([]))
 
         await asyncio.wait_for(start_event.wait(), timeout=1)
 
         for _ in range(100):
             try:
-                reader, writer = await asyncio.open_connection("127.0.0.1", port)
+                reader, writer = await asyncio.open_connection(
+                    READINESS_HOST, READINESS_PORT
+                )
             except OSError:
                 await asyncio.sleep(0.01)
                 continue
             try:
-                data = await reader.readline()
+                writer.write(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+                await writer.drain()
+                data = await reader.read()
             finally:
                 writer.close()
                 await writer.wait_closed()
-            assert data == b"ready\n"
+            assert b"HTTP/1.1 200 OK" in data
+            assert data.endswith(b"ready\n")
             break
         else:  # pragma: no cover - defensive
             pytest.fail("Readiness server did not accept connections")
@@ -108,7 +118,9 @@ def test_main_exposes_readiness_probe(monkeypatch):
 
         for _ in range(10):
             try:
-                reader, writer = await asyncio.open_connection("127.0.0.1", port)
+                reader, writer = await asyncio.open_connection(
+                    READINESS_HOST, READINESS_PORT
+                )
             except OSError:
                 break
             else:

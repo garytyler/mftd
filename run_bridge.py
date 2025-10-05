@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 from contextlib import suppress
 from typing import Callable, Sequence
@@ -96,12 +95,27 @@ async def start_bridge_with_retry(
             raise
         else:
             break
+READINESS_HOST = "127.0.0.1"
+READINESS_PORT = 9090
+_HTTP_READY_RESPONSE = (
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/plain; charset=utf-8\r\n"
+    "Content-Length: 6\r\n"
+    "Connection: close\r\n"
+    "\r\n"
+    "ready\n"
+).encode("ascii")
+
+
 async def _handle_readiness_probe(
     reader: asyncio.StreamReader, writer: asyncio.StreamWriter
 ) -> None:
-    del reader  # We do not expect any input.
     try:
-        writer.write(b"ready\n")
+        try:
+            await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), timeout=0.5)
+        except (asyncio.IncompleteReadError, asyncio.LimitOverrunError, asyncio.TimeoutError):
+            pass
+        writer.write(_HTTP_READY_RESPONSE)
         await writer.drain()
     finally:
         writer.close()
@@ -109,18 +123,7 @@ async def _handle_readiness_probe(
             await writer.wait_closed()
 
 
-def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the MIDI⇄OSC bridge")
-    parser.add_argument(
-        "--ready-tcp-port",
-        type=int,
-        help="Expose a readiness TCP endpoint on the given port",
-    )
-    return parser.parse_args(argv)
-
-
 async def main(argv: Sequence[str] | None = None) -> None:
-    args = _parse_args(argv)
     bridge = MidiOscBridge(
         osc_dst_host="127.0.0.1",
         osc_dst_ports=[9000, 9001, 9002, 9003, 9004],
@@ -154,21 +157,20 @@ async def main(argv: Sequence[str] | None = None) -> None:
             print("Failed to start bridge:", exc)
             raise SystemExit(1) from exc
 
-        if args.ready_tcp_port is not None:
-            try:
-                readiness_server = await asyncio.start_server(
-                    _handle_readiness_probe,
-                    host="127.0.0.1",
-                    port=args.ready_tcp_port,
-                )
-            except Exception as exc:
-                print(
-                    "Failed to start readiness endpoint on port",
-                    args.ready_tcp_port,
-                    ":",
-                    exc,
-                )
-                raise SystemExit(1) from exc
+        try:
+            readiness_server = await asyncio.start_server(
+                _handle_readiness_probe,
+                host=READINESS_HOST,
+                port=READINESS_PORT,
+            )
+        except Exception as exc:
+            print(
+                "Failed to start readiness endpoint on",
+                f"{READINESS_HOST}:{READINESS_PORT}",
+                ":",
+                exc,
+            )
+            raise SystemExit(1) from exc
 
         print("Bridge running. Press Ctrl+C to stop.")
 
