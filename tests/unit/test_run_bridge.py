@@ -131,3 +131,38 @@ def test_main_exposes_readiness_probe(monkeypatch):
             pytest.fail("Readiness server still accepting connections after shutdown")
 
     asyncio.run(exercise())
+
+
+def test_main_handles_cancellation_during_startup(monkeypatch, capfd):
+    async def exercise() -> None:
+        start_called = asyncio.Event()
+        stop_called = asyncio.Event()
+
+        async def fake_start(self) -> None:  # type: ignore[override]
+            start_called.set()
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                raise
+
+        async def fake_stop(self) -> None:  # type: ignore[override]
+            stop_called.set()
+
+        monkeypatch.setattr(run_bridge.MidiOscBridge, "start", fake_start)
+        monkeypatch.setattr(run_bridge.MidiOscBridge, "stop", fake_stop)
+
+        main_task = asyncio.create_task(main([]))
+
+        await asyncio.wait_for(start_called.wait(), timeout=1)
+
+        main_task.cancel()
+
+        with pytest.raises(asyncio.CancelledError):
+            await main_task
+
+        await asyncio.wait_for(stop_called.wait(), timeout=1)
+
+    asyncio.run(exercise())
+
+    out, err = capfd.readouterr()
+    assert "Stopping bridge…" in out

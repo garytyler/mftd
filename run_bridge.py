@@ -173,10 +173,20 @@ async def main(argv: Sequence[str] | None = None) -> None:
     )
 
     readiness_probe = HttpReadinessProbe()
+    stop_announced = False
+
+    def announce_stop() -> None:
+        nonlocal stop_announced
+        if stop_announced:
+            return
+        print("\nStopping bridge…")
+        stop_announced = True
 
     try:
         try:
             await start_bridge_with_retry(bridge)
+        except asyncio.CancelledError:
+            raise
         except OSError as exc:
             print(
                 "Failed to start bridge due to unavailable port(s):",
@@ -189,6 +199,8 @@ async def main(argv: Sequence[str] | None = None) -> None:
 
         try:
             await readiness_probe.start()
+        except asyncio.CancelledError:
+            raise
         except Exception as exc:
             print(
                 "Failed to start readiness endpoint on",
@@ -204,11 +216,20 @@ async def main(argv: Sequence[str] | None = None) -> None:
             while True:
                 await asyncio.sleep(1)
         except KeyboardInterrupt:
-            print("\nStopping bridge…")
+            announce_stop()
+        except asyncio.CancelledError:
+            announce_stop()
+            raise
+    except asyncio.CancelledError:
+        announce_stop()
+        raise
     finally:
         await readiness_probe.stop()
         await bridge.stop()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
