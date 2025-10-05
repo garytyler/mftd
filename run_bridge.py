@@ -95,6 +95,8 @@ async def start_bridge_with_retry(
             raise
         else:
             break
+
+
 READINESS_HOST = "127.0.0.1"
 READINESS_PORT = 9090
 
@@ -166,7 +168,7 @@ async def main(argv: Sequence[str] | None = None) -> None:
 
     osc_ports_desc = ", ".join(str(port) for port in bridge.midi_to_osc.osc_dst_ports)
     print(
-        "Starting bridge — MIDI CC → OSC on "
+        "Starting mftd bridge — MIDI CC → OSC on "
         f"{bridge.midi_to_osc.osc_dst_host}:{osc_ports_desc}, "
         "OSC CC → MIDI on "
         f"{bridge.osc_to_midi.osc_src_host}:{bridge.osc_to_midi.osc_src_port}."
@@ -179,7 +181,7 @@ async def main(argv: Sequence[str] | None = None) -> None:
         nonlocal stop_announced
         if stop_announced:
             return
-        print("\nStopping bridge…")
+        print("\nStopping mftd bridge…")
         stop_announced = True
 
     try:
