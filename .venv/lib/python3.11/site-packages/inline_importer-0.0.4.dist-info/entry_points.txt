@@ -1,0 +1,3 @@
+[console_scripts]
+inline-python = inline_importer.__main__:main
+
