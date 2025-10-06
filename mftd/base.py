@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 from enum import IntEnum
-from typing import Any, get_type_hints, Self, Dict
+from typing import Any, get_type_hints, Dict
 
 
 @dataclass
@@ -36,7 +36,7 @@ class BaseModel:
         return value
 
     @classmethod
-    def from_in_dict(cls, data: Dict[int, int]) -> Self:
+    def from_in_dict(cls, data: Dict[int, int]):
         kwargs = {}
         for field in fields(cls):
             try:
