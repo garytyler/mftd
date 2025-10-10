@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import inspect
-import logging
 import queue
 import struct
 from collections.abc import Callable, Sequence
@@ -54,18 +54,20 @@ def _encode_osc_message(address: str, payload: Sequence[Any]) -> bytes:
     return b"".join(chunks)
 
 
-_LOGGER = logging.getLogger(__name__)
-
-
 class _OscDatagramProtocol(asyncio.DatagramProtocol):
-    def __init__(self, host: str, port: int) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        on_error: Callable[[str, int, Exception | None], None] | None = None,
+    ) -> None:
         self._host = host
         self._port = port
+        self._on_error = on_error
 
     def error_received(self, exc: Exception) -> None:  # pragma: no cover - logging only
-        _LOGGER.debug(
-            "OSC datagram send error for %s:%s: %s", self._host, self._port, exc
-        )
+        if self._on_error is not None:
+            self._on_error(self._host, self._port, exc)
 
 
 class _OscDatagramClient:
@@ -112,6 +114,7 @@ class MidiToOscForwarder:
             tuple[Sequence[int], float] | None
         ] | None = None
         self._drain_task: asyncio.Task[None] | None = None
+        self._osc_error_reasons: dict[int, str] = {}
 
     @staticmethod
     def _normalise_ports(osc_dst_ports: Sequence[int]) -> tuple[int, ...]:
@@ -188,6 +191,7 @@ class MidiToOscForwarder:
             if closer is not None:
                 closer()
         self._osc_clients.clear()
+        self._osc_error_reasons.clear()
         self._loop = None
         self._running = False
 
@@ -215,10 +219,38 @@ class MidiToOscForwarder:
             return client
 
         transport, _protocol = await self._loop.create_datagram_endpoint(
-            lambda: _OscDatagramProtocol(self._osc_dst_host, port),
+            lambda: _OscDatagramProtocol(
+                self._osc_dst_host, port, self._handle_osc_send_error
+            ),
             remote_addr=(self._osc_dst_host, port),
         )
         return _OscDatagramClient(transport)
+
+    def _describe_osc_error(self, exc: Exception | None) -> str:
+        if exc is None:
+            return "The operating system reported an unspecified UDP send error."
+
+        if isinstance(exc, OSError):
+            if exc.errno in {errno.ECONNREFUSED, 61, 10061}:
+                return (
+                    "No OSC server is listening on the destination port; "
+                    "the host rejected the datagram."
+                )
+            return str(exc)
+
+        return str(exc)
+
+    def _handle_osc_send_error(
+        self, host: str, port: int, exc: Exception | None
+    ) -> None:  # pragma: no cover - defensive logging
+        reason = self._describe_osc_error(exc)
+        previous = self._osc_error_reasons.get(port)
+        if previous == reason:
+            return
+        self._osc_error_reasons[port] = reason
+        print(
+            f"OSC send error to {host}:{port}: {reason}"
+        )
 
     async def _drain_midi_events(self) -> None:
         assert self._midi_queue is not None
