@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import signal
 from contextlib import suppress
 from typing import Callable, Sequence
 
@@ -181,13 +182,20 @@ async def main(argv: Sequence[str] | None = None) -> None:
 
     readiness_probe = HttpReadinessProbe()
     stop_announced = False
+    loop = asyncio.get_running_loop()
+    stop_event = asyncio.Event()
 
-    def announce_stop() -> None:
+    def request_shutdown() -> None:
         nonlocal stop_announced
         if stop_announced:
             return
-        print("\nStopping mftd bridge…")
         stop_announced = True
+        print("\nStopping bridge…")
+        stop_event.set()
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        with suppress(NotImplementedError):
+            loop.add_signal_handler(sig, request_shutdown)
 
     try:
         try:
@@ -220,17 +228,19 @@ async def main(argv: Sequence[str] | None = None) -> None:
         print("Bridge running. Press Ctrl+C to stop.")
 
         try:
-            while True:
-                await asyncio.sleep(1)
+            await stop_event.wait()
         except KeyboardInterrupt:
-            announce_stop()
+            request_shutdown()
         except asyncio.CancelledError:
-            announce_stop()
+            request_shutdown()
             raise
     except asyncio.CancelledError:
-        announce_stop()
+        request_shutdown()
         raise
     finally:
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            with suppress(NotImplementedError):
+                loop.remove_signal_handler(sig)
         await readiness_probe.stop()
         await bridge.stop()
 
