@@ -71,3 +71,11 @@ redesigning the program from scratch.
 
 These changes can be pursued independently and should keep the current bridge
 structure intact while targeting the dominant costs observed in the hot paths.
+
+## Test-only pythonosc stub
+- The lightweight `pythonosc` stub that lives in the test fixture only affects
+  the unit-test environment. It replaces network and encoding work with simple
+  in-memory queues so that tests can run without the third-party dependency,
+  but production code continues to import the real library. As a result, this
+  change does not alter the bridge's runtime performance profile; it just
+  shortens and simplifies the test setup.【F:tests/conftest.py†L1-L106】
