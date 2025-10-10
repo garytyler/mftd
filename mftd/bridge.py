@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
+import queue
+import struct
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -9,6 +12,62 @@ from mftd.midi import create_midi_input, create_midi_output
 
 def _is_control_change(status_byte: int) -> bool:
     return (status_byte & 0xF0) == 0xB0
+
+
+def _pad_osc_string(value: str) -> bytes:
+    data = value.encode("utf-8") + b"\x00"
+    padding = (4 - (len(data) % 4)) % 4
+    if padding:
+        data += b"\x00" * padding
+    return data
+
+
+def _encode_osc_argument(argument: Any) -> tuple[str, bytes]:
+    if isinstance(argument, bool):
+        return ("T" if argument else "F"), b""
+    if isinstance(argument, int) and not isinstance(argument, bool):
+        return "i", struct.pack(">i", int(argument))
+    if isinstance(argument, float):
+        return "f", struct.pack(">f", float(argument))
+    if isinstance(argument, str):
+        return "s", _pad_osc_string(argument)
+    raise TypeError(f"Unsupported OSC argument type: {type(argument)!r}")
+
+
+def _encode_osc_message(address: str, payload: Sequence[Any]) -> bytes:
+    if not address.startswith("/"):
+        raise ValueError("OSC address must start with '/'")
+
+    chunks = [_pad_osc_string(address)]
+    type_tags = [","]
+    arg_chunks: list[bytes] = []
+
+    for argument in payload:
+        tag, encoded = _encode_osc_argument(argument)
+        type_tags.append(tag)
+        if encoded:
+            arg_chunks.append(encoded)
+
+    chunks.append(_pad_osc_string("".join(type_tags)))
+    chunks.extend(arg_chunks)
+    return b"".join(chunks)
+
+
+class _OscDatagramProtocol(asyncio.DatagramProtocol):
+    def error_received(self, exc: Exception) -> None:  # pragma: no cover - logging only
+        print("OSC datagram send error:", exc)
+
+
+class _OscDatagramClient:
+    def __init__(self, transport: asyncio.DatagramTransport) -> None:
+        self._transport = transport
+
+    def send_message(self, address: str, payload: Sequence[Any]) -> None:
+        packet = _encode_osc_message(address, payload)
+        self._transport.sendto(packet)
+
+    def close(self) -> None:
+        self._transport.close()
 
 
 class MidiToOscForwarder:
@@ -39,6 +98,10 @@ class MidiToOscForwarder:
             self._osc_clients[self._osc_dst_ports[0]] = osc_client
         self._loop: asyncio.AbstractEventLoop | None = None
         self._running = False
+        self._midi_queue: queue.SimpleQueue[
+            tuple[Sequence[int], float] | None
+        ] | None = None
+        self._drain_task: asyncio.Task[None] | None = None
 
     @staticmethod
     def _normalise_ports(osc_dst_ports: Sequence[int]) -> tuple[int, ...]:
@@ -76,27 +139,13 @@ class MidiToOscForwarder:
         if self._midi_in is None:
             raise RuntimeError("MIDI input is not available.")
 
-        missing_ports = [
-            port for port in self._osc_dst_ports if port not in self._osc_clients
-        ]
-
-        if missing_ports:
-            if self._osc_client_factory is None:
-                from pythonosc import udp_client
-
-                def default_factory(host: str, port: int) -> Any:
-                    return udp_client.SimpleUDPClient(host, port)
-
-                factory = default_factory
-            else:
-                factory = self._osc_client_factory
-
-            for port in missing_ports:
-                self._osc_clients[port] = factory(self._osc_dst_host, port)
-
         self._loop = asyncio.get_running_loop()
-        self._midi_in.set_callback(self._handle_midi_message)
+        await self._ensure_osc_clients()
+
         self._running = True
+        self._midi_queue = queue.SimpleQueue()
+        self._drain_task = self._loop.create_task(self._drain_midi_events())
+        self._midi_in.set_callback(self._enqueue_midi_event)
 
     async def stop(self) -> None:
         if not self._running:
@@ -114,14 +163,85 @@ class MidiToOscForwarder:
             if close_port:
                 close_port()
 
+        if self._drain_task is not None:
+            self._running = False
+            if self._midi_queue is not None:
+                self._midi_queue.put(None)
+            await self._drain_task
+            self._drain_task = None
+
+        if self._midi_queue is not None:
+            self._midi_queue = None
+
+        for client in list(self._osc_clients.values()):
+            closer: Callable[[], None] | None = getattr(client, "close", None)
+            if closer is not None:
+                closer()
+        self._osc_clients.clear()
+        self._loop = None
         self._running = False
 
-    def _handle_midi_message(
+    async def _ensure_osc_clients(self) -> None:
+        assert self._loop is not None
+
+        missing_ports = [
+            port for port in self._osc_dst_ports if port not in self._osc_clients
+        ]
+
+        if not missing_ports:
+            return
+
+        for port in missing_ports:
+            client = await self._create_osc_client(port)
+            self._osc_clients[port] = client
+
+    async def _create_osc_client(self, port: int) -> Any:
+        assert self._loop is not None
+
+        if self._osc_client_factory is not None:
+            client = self._osc_client_factory(self._osc_dst_host, port)
+            if inspect.isawaitable(client):
+                return await client  # type: ignore[return-value]
+            return client
+
+        transport, _protocol = await self._loop.create_datagram_endpoint(
+            _OscDatagramProtocol, remote_addr=(self._osc_dst_host, port)
+        )
+        return _OscDatagramClient(transport)
+
+    async def _drain_midi_events(self) -> None:
+        assert self._midi_queue is not None
+        while self._running:
+            try:
+                event = await asyncio.to_thread(self._midi_queue.get)
+            except asyncio.CancelledError:
+                break
+
+            if event is None:
+                break
+
+            self._process_midi_event(event)
+
+    def _enqueue_midi_event(
         self, event: tuple[Sequence[int], float] | None, _: Any
     ) -> None:
         if not event:
             return
 
+        if self._loop is not None:
+            try:
+                running_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                running_loop = None
+            if running_loop is self._loop:
+                self._process_midi_event(event)
+                return
+
+        if self._midi_queue is None:
+            return
+        self._midi_queue.put(event)
+
+    def _process_midi_event(self, event: tuple[Sequence[int], float]) -> None:
         message, _delta = event
         if not message:
             return
@@ -137,7 +257,7 @@ class MidiToOscForwarder:
         controller = int(message[1]) & 0x7F
         value = int(message[2]) & 0x7F
 
-        if self._loop is None or not self._osc_clients:
+        if not self._osc_clients:
             return
 
         payload = [channel, controller, value]
@@ -159,14 +279,11 @@ class MidiToOscForwarder:
                 )
                 continue
 
-            def _send(client=client) -> None:
-                try:
-                    client.send_message(target_address, payload)
-                except Exception as exc:  # pragma: no cover - defensive logging
-                    print("Failed to send OSC message:", payload)
-                    print(exc)
-
-            self._loop.call_soon_threadsafe(_send)
+            try:
+                client.send_message(target_address, payload)
+            except Exception as exc:  # pragma: no cover - defensive logging
+                print("Failed to send OSC message:", payload)
+                print(exc)
 
     def _resolve_destination_ports(
         self, message: tuple[int, int, int]

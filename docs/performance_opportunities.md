@@ -10,17 +10,17 @@ redesigning the program from scratch.
   thread (via `asyncio.to_thread` or a background task that drains a
   `queue.SimpleQueue`) would let the handler run directly on the loop and avoid
   cross-thread hops for each message, while preserving the existing public
-  interface.【F:mftd/bridge.py†L97-L169】
+  interface.【F:mftd/bridge.py†L134-L227】
 - Likewise, using an `asyncio.DatagramTransport` for OSC output (instead of the
   python-osc client) would allow writing to sockets with `transport.sendto`
   directly from the loop without leaving the asyncio concurrency model. This can
   be done behind a thin adapter so callers still interact with the same
-  high-level API.【F:mftd/bridge.py†L83-L169】
+  high-level API.【F:mftd/bridge.py†L18-L213】
 - The recent switch from a polling shutdown loop to an `asyncio.Event`
   dramatically reduced the bridge's idle CPU usage (no more wake-ups every
   50–100 ms) and shortened shutdown latency, but it does not change how quickly
   MIDI or OSC messages are forwarded. Runtime throughput is still bounded by the
-  per-message scheduling and encoding work described below.【F:run_bridge.py†L96-L161】
+  per-message scheduling and encoding work described below.【F:run_bridge.py†L164-L245】
 
 ## Reduce per-message scheduling overhead
 - `MidiToOscForwarder._handle_midi_message` currently schedules a separate
@@ -28,10 +28,10 @@ redesigning the program from scratch.
   each send (`_send`). Collapsing this into a single loop that is scheduled once
   per MIDI event (or even sending synchronously from the callback when it is
   already running on the event loop thread) would reduce the number of context
-  switches and object allocations.【F:mftd/bridge.py†L151-L169】
+  switches and object allocations.【F:mftd/bridge.py†L239-L282】
 - Switching from the nested function to a small helper method allows reuse of a
   pre-created `functools.partial` or direct `call_soon_threadsafe` of the method,
-  eliminating repeated closure construction.【F:mftd/bridge.py†L151-L169】
+  eliminating repeated closure construction.【F:mftd/bridge.py†L239-L282】
 
 ## Avoid repeated OSC address work for static mappings
 - `MessageRouter.getAddress` builds string keys, performs dictionary lookups and
@@ -48,22 +48,22 @@ redesigning the program from scratch.
 - `SimpleUDPClient.send_message` encodes OSC messages on every call. Providing a
   custom `osc_client_factory` that reuses a pre-built message buffer or uses a
   lightweight socket wrapper would reduce per-message allocations and Python
-  function calls while keeping the same API surface.【F:mftd/bridge.py†L83-L169】
+  function calls while keeping the same API surface.【F:mftd/bridge.py†L18-L282】
 - If OSC destinations rarely change, keep a local reference to the client
   objects inside `_handle_midi_message` (e.g. turn the dictionary into a tuple
   aligned with `osc_dst_ports`) to avoid dictionary lookups for every packet.
   This keeps the existing configuration API but removes a hash-table lookup per
-  message.【F:mftd/bridge.py†L30-L169】
+  message.【F:mftd/bridge.py†L18-L282】
 
 ## Cut down on defensive work in the hot path
 - `_resolve_destination_ports` rebuilds tuples on every message when multiple
   ports are chosen. Precomputing common selections (e.g. target index → tuple of
   destination ports) or returning slices of a cached structure avoids repeated
-  tuple and list creation.【F:mftd/bridge.py†L171-L205】
+  tuple and list creation.【F:mftd/bridge.py†L283-L317】
 - The current handler converts controller/value bytes with `int()` even though
   the values are already integers. Dropping the redundant conversions and bit
   masks (after validating upstream) reduces arithmetic and keeps the original
-  semantics.【F:mftd/bridge.py†L133-L138】
+  semantics.【F:mftd/bridge.py†L251-L254】
 
 ## Reduce logging and startup probes in production runs
 - `create_midi_input` prints the name of every port during discovery. Turning

@@ -2,9 +2,6 @@ import asyncio
 
 import pytest
 
-from pythonosc.dispatcher import Dispatcher
-from pythonosc.osc_server import AsyncIOOSCUDPServer
-
 from mftd.bridge import MidiToOscForwarder
 
 
@@ -31,24 +28,37 @@ async def _run_midi_to_osc_end_to_end() -> None:
     messages_primary = asyncio.Queue()
     messages_secondary = asyncio.Queue()
 
-    disp_primary = Dispatcher()
-    disp_secondary = Dispatcher()
+    class CaptureProtocol(asyncio.DatagramProtocol):
+        def __init__(self, target_queue: asyncio.Queue):
+            self._queue = target_queue
 
-    def capture_primary(_address, *args):
-        messages_primary.put_nowait((_address, list(args)))
+        def datagram_received(self, data: bytes, _addr):
+            self._queue.put_nowait(data)
 
-    def capture_secondary(_address, *args):
-        messages_secondary.put_nowait((_address, list(args)))
+    def decode_packet(packet: bytes) -> tuple[str, list[int]]:
+        def read_padded_string(offset: int) -> tuple[str, int]:
+            end = packet.index(0, offset)
+            value = packet[offset:end].decode("utf-8")
+            offset = (end + 4) & ~0x03
+            return value, offset
 
-    disp_primary.map("/mftd/cc", capture_primary)
-    disp_secondary.map("/mftd/cc", capture_secondary)
+        address, cursor = read_padded_string(0)
+        type_tags, cursor = read_padded_string(cursor)
+        values: list[int] = []
+        for tag in type_tags[1:]:
+            if tag == "i":
+                values.append(int.from_bytes(packet[cursor:cursor + 4], "big", signed=True))
+                cursor += 4
+        return address, values
 
-    server_primary = AsyncIOOSCUDPServer(("127.0.0.1", 0), disp_primary, loop)
-    transport_primary, _ = await server_primary.create_serve_endpoint()
+    transport_primary, _ = await loop.create_datagram_endpoint(
+        lambda: CaptureProtocol(messages_primary), local_addr=("127.0.0.1", 0)
+    )
     port_primary = transport_primary.get_extra_info("sockname")[1]
 
-    server_secondary = AsyncIOOSCUDPServer(("127.0.0.1", 0), disp_secondary, loop)
-    transport_secondary, _ = await server_secondary.create_serve_endpoint()
+    transport_secondary, _ = await loop.create_datagram_endpoint(
+        lambda: CaptureProtocol(messages_secondary), local_addr=("127.0.0.1", 0)
+    )
     port_secondary = transport_secondary.get_extra_info("sockname")[1]
 
     midi_in = TriggerMidiIn()
@@ -62,7 +72,8 @@ async def _run_midi_to_osc_end_to_end() -> None:
 
     midi_in.emit(([0xB3, 7, 120], 0.0))
 
-    address, payload = await asyncio.wait_for(messages_secondary.get(), timeout=1)
+    packet = await asyncio.wait_for(messages_secondary.get(), timeout=1)
+    address, payload = decode_packet(packet)
     assert address == "/mftd/cc"
     assert payload == [3, 7, 120]
 
