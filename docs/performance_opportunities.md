@@ -16,6 +16,11 @@ redesigning the program from scratch.
   directly from the loop without leaving the asyncio concurrency model. This can
   be done behind a thin adapter so callers still interact with the same
   high-level API.【F:mftd/bridge.py†L83-L169】
+- The recent switch from a polling shutdown loop to an `asyncio.Event`
+  dramatically reduced the bridge's idle CPU usage (no more wake-ups every
+  50–100 ms) and shortened shutdown latency, but it does not change how quickly
+  MIDI or OSC messages are forwarded. Runtime throughput is still bounded by the
+  per-message scheduling and encoding work described below.【F:run_bridge.py†L96-L161】
 
 ## Reduce per-message scheduling overhead
 - `MidiToOscForwarder._handle_midi_message` currently schedules a separate
