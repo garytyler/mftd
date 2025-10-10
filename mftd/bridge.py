@@ -22,7 +22,8 @@ class MidiToOscForwarder:
         osc_dst_addr: str = "/mftd/cc",
         midi_in: Any | None = None,
         osc_client: Any | None = None,
-        osc_port_selector: Callable[[tuple[int, int, int]], int] | None = None,
+        osc_port_selector: Callable[[tuple[int, int, int]], int | list[int]]
+        | None = None,
         osc_addr_resolver: Callable[[tuple[int, int, int], str], str] | None = None,
         osc_client_factory: Callable[[str, int], Any] | None = None,
     ) -> None:
@@ -141,52 +142,67 @@ class MidiToOscForwarder:
 
         payload = [channel, controller, value]
         message = (channel, controller, value)
-        target_port = self._resolve_destination_port(message)
-        if target_port is None:
-            return
-
-        client = self._osc_clients.get(target_port)
-        if client is None:
-            print(
-                "OSC port selector returned unknown port:",
-                target_port,
-                "available ports:",
-                sorted(self._osc_clients.keys()),
-            )
+        target_ports = self._resolve_destination_ports(message)
+        if not target_ports:
             return
 
         target_address = self._resolve_destination_address(message, self._osc_dst_addr)
 
-        def _send() -> None:
-            try:
-                client.send_message(target_address, payload)
-            except Exception as exc:  # pragma: no cover - defensive logging
-                print("Failed to send OSC message:", payload)
-                print(exc)
+        for target_port in target_ports:
+            client = self._osc_clients.get(target_port)
+            if client is None:
+                print(
+                    "OSC port selector returned unknown port:",
+                    target_port,
+                    "available ports:",
+                    sorted(self._osc_clients.keys()),
+                )
+                continue
 
-        self._loop.call_soon_threadsafe(_send)
+            def _send(client=client) -> None:
+                try:
+                    client.send_message(target_address, payload)
+                except Exception as exc:  # pragma: no cover - defensive logging
+                    print("Failed to send OSC message:", payload)
+                    print(exc)
 
-    def _resolve_destination_port(self, message: tuple[int, int, int]) -> int | None:
+            self._loop.call_soon_threadsafe(_send)
+
+    def _resolve_destination_ports(
+        self, message: tuple[int, int, int]
+    ) -> tuple[int, ...]:
         if len(self._osc_dst_ports) == 1:
-            return self._osc_dst_ports[0]
+            return self._osc_dst_ports
 
         if self._osc_port_selector is None:
-            return self._osc_dst_ports[0]
+            return (self._osc_dst_ports[0],)
 
         try:
             selected_port = self._osc_port_selector(message)
         except Exception as exc:  # pragma: no cover - defensive logging
             print("OSC port selector raised an exception:", exc)
-            return None
+            return ()
 
         if selected_port is None:
-            return None
+            return ()
 
+        # Handle both single port (int) and multiple ports (Sequence)
+        if isinstance(selected_port, int):
+            return (selected_port,)
+
+        # Handle sequence of ports
         try:
-            return int(selected_port)
-        except (TypeError, ValueError):
+            ports = []
+            for port in selected_port:
+                try:
+                    ports.append(int(port))
+                except (TypeError, ValueError):
+                    print("OSC port selector returned an invalid port:", port)
+            return tuple(ports)
+        except TypeError:
+            # selected_port is not iterable
             print("OSC port selector returned an invalid port:", selected_port)
-            return None
+            return ()
 
     def _resolve_destination_address(
         self, message: tuple[int, int, int], base_address: str
@@ -331,7 +347,8 @@ class MidiOscBridge:
         osc_src_host: str = "127.0.0.1",
         osc_src_port: int = 9001,
         osc_address: str = "/mftd/cc",
-        osc_port_selector: Callable[[tuple[int, int, int]], int] | None = None,
+        osc_port_selector: Callable[[tuple[int, int, int]], int | list[int]]
+        | None = None,
         osc_addr_resolver: Callable[[tuple[int, int, int], str], str] | None = None,
         osc_client_factory: Callable[[str, int], Any] | None = None,
     ) -> None:

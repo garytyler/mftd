@@ -13,6 +13,7 @@ from mftd.interpreter import MessageInterpreter
 
 class MessageRouter:
     basePort = 9000
+    engineBasePort = 9010
     targetNumsToEncoderIndexes = {
         0: {10, 11, 14, 15},
         1: {0, 4, 8, 12},
@@ -31,8 +32,9 @@ class MessageRouter:
     renames = interpreter.getEncoderChannelRenameMaps()
 
     @classmethod
-    def getPort(cls, message) -> int | None:
+    def getPort(cls, message) -> list[int] | int | None:
         channel, index, value = message
+        ports = None
         if (
             channel
             in [
@@ -43,26 +45,32 @@ class MessageRouter:
             and index in cls.encoderIndexesToTargetNums
         ):
             targetNum = cls.encoderIndexesToTargetNums[index]
-            return cls.basePort + targetNum
+            ports = [cls.basePort + targetNum, cls.engineBasePort + targetNum]
         elif channel == MidiChannel.SYSTEM:
-            return cls.basePort
-        else:
-            return None
+            ports = [cls.basePort, cls.engineBasePort]
+        return ports
 
     @classmethod
     def getAddress(cls, message, address) -> str | None:
         channel, index, value = message
         if channel == MidiChannel.SYSTEM:
             return address
-        mapping = cls.interpreter.RenamesByCc[f"ch{channel + 1}ctrl{index + 1}"]
+        try:
+            mapping = cls.interpreter.RenamesByCc[f"ch{channel + 1}ctrl{index + 1}"]
+        except KeyError as exc:
+            print(f"KeyError: {exc}")
+            return address
         if "loc" in mapping and mapping["loc"].startswith("s"):
             return address
         mapping["index"] = index
         mapping["loc2"] = f"row{index // 4}col{index % 4}u"
+
         targetNum = cls.encoderIndexesToTargetNums[index]
         switchName = mapping["target"][1::]
         role = mapping["role"].split("_")[1]
+
         func = MessageInterpreter.MidiRoleToFunc[role]
+
         address = "/".join([address, str(targetNum), switchName, role, func])
         return address
 
@@ -115,6 +123,7 @@ class HttpReadinessProbe:
         self._host = host
         self._port = port
         self._server: asyncio.base_events.Server | None = None
+        print(host, port)
 
     async def start(self) -> None:
         if self._server is not None:
@@ -158,7 +167,7 @@ class HttpReadinessProbe:
 async def main(argv: Sequence[str] | None = None) -> None:
     bridge = MidiOscBridge(
         osc_dst_host="127.0.0.1",
-        osc_dst_ports=[9000, 9001, 9002, 9003, 9004],
+        osc_dst_ports=[9000, 9001, 9002, 9003, 9004] + [9010, 9011, 9012, 9013, 9014],
         osc_src_host="127.0.0.1",
         osc_src_port=9005,
         osc_address="/mftd/cc",
