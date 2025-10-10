@@ -13,6 +13,7 @@ from mftd.interpreter import MessageInterpreter
 
 class MessageRouter:
     basePort = 9000
+    engineBasePort = 9010
     targetNumsToEncoderIndexes = {
         0: {10, 11, 14, 15},
         1: {0, 4, 8, 12},
@@ -31,7 +32,7 @@ class MessageRouter:
     renames = interpreter.getEncoderChannelRenameMaps()
 
     @classmethod
-    def getPort(cls, message) -> int | None:
+    def getPort(cls, message) -> list[int] | int | None:
         channel, index, value = message
         if (
             channel
@@ -43,9 +44,9 @@ class MessageRouter:
             and index in cls.encoderIndexesToTargetNums
         ):
             targetNum = cls.encoderIndexesToTargetNums[index]
-            return cls.basePort + targetNum
+            return [cls.basePort + targetNum, cls.engineBasePort + targetNum]
         elif channel == MidiChannel.SYSTEM:
-            return cls.basePort
+            return [cls.basePort, cls.engineBasePort]
         else:
             return None
 
@@ -86,7 +87,7 @@ async def start_bridge_with_retry(
                 print(
                     "MIDI device unavailable, retrying in",
                     f"{retry_delay:.1f}s...",
-                    str(exc),
+                    f"Error: {exc}",
                 )
                 await bridge.stop()
                 await asyncio.sleep(retry_delay)

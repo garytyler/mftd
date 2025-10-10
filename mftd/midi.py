@@ -55,9 +55,13 @@ def create_midi_input() -> MidiInput | None:
         import rtmidi  # type: ignore
 
         midi_in = rtmidi.MidiIn()
+        port_count = midi_in.get_port_count()
+        print(f"Found {port_count} MIDI input ports")
 
         # Auto-connect to device
-        for i in range(midi_in.get_port_count()):
+        for i in range(port_count):
+            port_name = midi_in.get_port_name(i)
+            print(f"  Port {i}: {port_name!r}")
             if constants.DEVICE_NAME in midi_in.get_port_name(i):
                 midi_in.open_port(i)
                 midi_in.ignore_types(False)  # Don't ignore sysex
@@ -71,6 +75,8 @@ def create_midi_input() -> MidiInput | None:
         return None
     elif is_td_available():
         return None
+
+    print("ERROR: rtmidi is not available")
     return None
 
 
@@ -109,7 +115,8 @@ def is_rtmidi_available() -> bool:
         # Test device creation to ensure rtmidi works
         rtmidi.MidiIn()
         return True
-    except Exception:
+    except Exception as exc:
+        print(f"rtmidi not available: {type(exc).__name__}: {exc}")
         return False
 
 
