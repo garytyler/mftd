@@ -122,6 +122,6 @@ class MftConfigInitializer:
         _setupEncoderConfig(10, True, Color.BLACK)
         _setupEncoderConfig(14, True, Color.BLACK)
         _setupEncoderConfig(11, True, Color.BLACK)
-        _setupEncoderConfig(15, True, Color.BLACK)
+        _setupEncoderConfig(15, True, Color.WHITE)
 
         return encoders
