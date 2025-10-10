@@ -34,7 +34,6 @@ class MessageRouter:
     @classmethod
     def getPort(cls, message) -> list[int] | int | None:
         channel, index, value = message
-        ports = None
         if (
             channel
             in [
@@ -45,10 +44,11 @@ class MessageRouter:
             and index in cls.encoderIndexesToTargetNums
         ):
             targetNum = cls.encoderIndexesToTargetNums[index]
-            ports = [cls.basePort + targetNum, cls.engineBasePort + targetNum]
+            return [cls.basePort + targetNum, cls.engineBasePort + targetNum]
         elif channel == MidiChannel.SYSTEM:
-            ports = [cls.basePort, cls.engineBasePort]
-        return ports
+            return [cls.basePort, cls.engineBasePort]
+        else:
+            return None
 
     @classmethod
     def getAddress(cls, message, address) -> str | None:
@@ -64,13 +64,10 @@ class MessageRouter:
             return address
         mapping["index"] = index
         mapping["loc2"] = f"row{index // 4}col{index % 4}u"
-
         targetNum = cls.encoderIndexesToTargetNums[index]
         switchName = mapping["target"][1::]
         role = mapping["role"].split("_")[1]
-
         func = MessageInterpreter.MidiRoleToFunc[role]
-
         address = "/".join([address, str(targetNum), switchName, role, func])
         return address
 
@@ -94,7 +91,7 @@ async def start_bridge_with_retry(
                 print(
                     "MIDI device unavailable, retrying in",
                     f"{retry_delay:.1f}s...",
-                    str(exc),
+                    f"Error: {exc}",
                 )
                 await bridge.stop()
                 await asyncio.sleep(retry_delay)
@@ -123,7 +120,6 @@ class HttpReadinessProbe:
         self._host = host
         self._port = port
         self._server: asyncio.base_events.Server | None = None
-        print(host, port)
 
     async def start(self) -> None:
         if self._server is not None:
