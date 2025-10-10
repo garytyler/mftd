@@ -33,6 +33,16 @@ customise the OSC address on a per-message basis you can provide an
 with the base address and should return the address to send to for that
 message.
 
+The bridge now keeps its OSC output inside asyncio's UDP transport layer so it
+can forward messages without thread hops. As a side effect the operating system
+can finally report when a datagram is rejected because nothing is listening on
+the chosen port (typically a `ConnectionRefusedError` on localhost). Those
+errors previously happened silently when using the python-osc client. When the
+bridge is told about them it prints a single explanatory message per
+destination, identifying the host and port so you can start the missing OSC
+server or adjust the configuration. Once the listener is up the warning stops
+and messages flow normally.
+
 Use `run_bridge.py` to run the bidirectional bridge from the command line. The
 script will keep retrying when the Midi Fighter Twister is not yet connected,
 making it suitable for running alongside live performance setups.
