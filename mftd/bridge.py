@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import queue
 import struct
 from collections.abc import Callable, Sequence
@@ -53,9 +54,18 @@ def _encode_osc_message(address: str, payload: Sequence[Any]) -> bytes:
     return b"".join(chunks)
 
 
+_LOGGER = logging.getLogger(__name__)
+
+
 class _OscDatagramProtocol(asyncio.DatagramProtocol):
+    def __init__(self, host: str, port: int) -> None:
+        self._host = host
+        self._port = port
+
     def error_received(self, exc: Exception) -> None:  # pragma: no cover - logging only
-        print("OSC datagram send error:", exc)
+        _LOGGER.debug(
+            "OSC datagram send error for %s:%s: %s", self._host, self._port, exc
+        )
 
 
 class _OscDatagramClient:
@@ -205,7 +215,8 @@ class MidiToOscForwarder:
             return client
 
         transport, _protocol = await self._loop.create_datagram_endpoint(
-            _OscDatagramProtocol, remote_addr=(self._osc_dst_host, port)
+            lambda: _OscDatagramProtocol(self._osc_dst_host, port),
+            remote_addr=(self._osc_dst_host, port),
         )
         return _OscDatagramClient(transport)
 
