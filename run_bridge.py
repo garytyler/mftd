@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import asyncio
 import signal
+import sys
 from contextlib import suppress
 from typing import Callable, Sequence
 
-from mftd import MidiChannel
+from mftd import (
+    MidiChannel,
+    MidiFighterTwister,
+)
 from mftd.bridge import MidiOscBridge
-from mftd.interpreter import MessageInterpreter
+from run_config_init import MftConfigInitializer
 
 
 class MessageRouter:
@@ -29,47 +33,27 @@ class MessageRouter:
         MidiChannel.ROTARY_ENCODER,
     ]
 
-    interpreter = MessageInterpreter()
-    renames = interpreter.getEncoderChannelRenameMaps()
+    encoderEngagementChannels = {
+        MidiChannel.ROTARY_ENCODER,
+        MidiChannel.SWITCH_AND_COLOR,
+        MidiChannel.SHIFT,
+    }
 
     @classmethod
     def getPort(cls, message) -> list[int] | int | None:
         channel, index, value = message
         if (
-            channel
-            in [
-                MidiChannel.ROTARY_ENCODER,
-                MidiChannel.SWITCH_AND_COLOR,
-                MidiChannel.SHIFT,
-            ]
+            channel in cls.encoderEngagementChannels
             and index in cls.encoderIndexesToTargetNums
         ):
             targetNum = cls.encoderIndexesToTargetNums[index]
             return [cls.basePort + targetNum, cls.engineBasePort + targetNum]
         elif channel == MidiChannel.SYSTEM:
             return [cls.basePort, cls.engineBasePort]
-        else:
-            return None
+        return None
 
     @classmethod
     def getAddress(cls, message, address) -> str | None:
-        channel, index, value = message
-        if channel == MidiChannel.SYSTEM:
-            return address
-        try:
-            mapping = cls.interpreter.RenamesByCc[f"ch{channel + 1}ctrl{index + 1}"]
-        except KeyError as exc:
-            print(f"KeyError: {exc}")
-            return address
-        if "loc" in mapping and mapping["loc"].startswith("s"):
-            return address
-        mapping["index"] = index
-        mapping["loc2"] = f"row{index // 4}col{index % 4}u"
-        targetNum = cls.encoderIndexesToTargetNums[index]
-        switchName = mapping["target"][1::]
-        role = mapping["role"].split("_")[1]
-        func = MessageInterpreter.MidiRoleToFunc[role]
-        address = "/".join([address, str(targetNum), switchName, role, func])
         return address
 
 
@@ -161,7 +145,7 @@ class HttpReadinessProbe:
                 await writer.wait_closed()
 
 
-async def main(argv: Sequence[str] | None = None) -> None:
+async def run_bridge(argv: Sequence[str] | None = None):
     bridge = MidiOscBridge(
         osc_dst_host="127.0.0.1",
         osc_dst_ports=[9000, 9001, 9002, 9003, 9004] + [9010, 9011, 9012, 9013, 9014],
@@ -245,8 +229,15 @@ async def main(argv: Sequence[str] | None = None) -> None:
         await bridge.stop()
 
 
-if __name__ == "__main__":
+def main(argv: Sequence[str] | None = None) -> None:
+    with MidiFighterTwister() as mft:
+        MftConfigInitializer(mft).configureDevice()
+
     try:
-        asyncio.run(main())
+        asyncio.run(run_bridge(argv), debug=False)
     except KeyboardInterrupt:
         pass
+
+
+if __name__ == "__main__":
+    main(argv=sys.argv[1:])
