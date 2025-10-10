@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import errno
+import functools
 import inspect
-import queue
 import struct
 from collections.abc import Callable, Sequence
 from typing import Any
@@ -78,6 +78,9 @@ class _OscDatagramClient:
         packet = _encode_osc_message(address, payload)
         self._transport.sendto(packet)
 
+    def send_packet(self, packet: bytes) -> None:
+        self._transport.sendto(packet)
+
     def close(self) -> None:
         self._transport.close()
 
@@ -110,9 +113,11 @@ class MidiToOscForwarder:
             self._osc_clients[self._osc_dst_ports[0]] = osc_client
         self._loop: asyncio.AbstractEventLoop | None = None
         self._running = False
-        self._midi_queue: queue.SimpleQueue[
+        self._midi_queue: asyncio.Queue[
             tuple[Sequence[int], float] | None
         ] | None = None
+        self._queue_put: Callable[[tuple[Sequence[int], float] | None], None] | None = None
+        self._schedule_queue_put: Callable[[tuple[Sequence[int], float] | None], None] | None = None
         self._drain_task: asyncio.Task[None] | None = None
         self._osc_error_reasons: dict[int, str] = {}
 
@@ -156,7 +161,11 @@ class MidiToOscForwarder:
         await self._ensure_osc_clients()
 
         self._running = True
-        self._midi_queue = queue.SimpleQueue()
+        self._midi_queue = asyncio.Queue()
+        self._queue_put = self._midi_queue.put_nowait
+        self._schedule_queue_put = functools.partial(
+            self._loop.call_soon_threadsafe, self._queue_put
+        )
         self._drain_task = self._loop.create_task(self._drain_midi_events())
         self._midi_in.set_callback(self._enqueue_midi_event)
 
@@ -178,13 +187,15 @@ class MidiToOscForwarder:
 
         if self._drain_task is not None:
             self._running = False
-            if self._midi_queue is not None:
-                self._midi_queue.put(None)
+            if self._queue_put is not None:
+                self._queue_put(None)
             await self._drain_task
             self._drain_task = None
 
         if self._midi_queue is not None:
             self._midi_queue = None
+        self._queue_put = None
+        self._schedule_queue_put = None
 
         for client in list(self._osc_clients.values()):
             closer: Callable[[], None] | None = getattr(client, "close", None)
@@ -256,7 +267,7 @@ class MidiToOscForwarder:
         assert self._midi_queue is not None
         while self._running:
             try:
-                event = await asyncio.to_thread(self._midi_queue.get)
+                event = await self._midi_queue.get()
             except asyncio.CancelledError:
                 break
 
@@ -280,9 +291,12 @@ class MidiToOscForwarder:
                 self._process_midi_event(event)
                 return
 
-        if self._midi_queue is None:
+        if self._schedule_queue_put is not None:
+            self._schedule_queue_put(event)
             return
-        self._midi_queue.put(event)
+
+        if self._queue_put is not None:
+            self._queue_put(event)
 
     def _process_midi_event(self, event: tuple[Sequence[int], float]) -> None:
         message, _delta = event
@@ -311,6 +325,7 @@ class MidiToOscForwarder:
 
         target_address = self._resolve_destination_address(message, self._osc_dst_addr)
 
+        encoded_packet: bytes | None = None
         for target_port in target_ports:
             client = self._osc_clients.get(target_port)
             if client is None:
@@ -323,10 +338,31 @@ class MidiToOscForwarder:
                 continue
 
             try:
-                client.send_message(target_address, payload)
+                encoded_packet = self._send_osc_message(
+                    client, target_address, payload, encoded_packet
+                )
             except Exception as exc:  # pragma: no cover - defensive logging
                 print("Failed to send OSC message:", payload)
                 print(exc)
+
+    def _send_osc_message(
+        self,
+        client: Any,
+        address: str,
+        payload: Sequence[Any],
+        encoded_packet: bytes | None,
+    ) -> bytes | None:
+        if hasattr(client, "send_packet"):
+            if encoded_packet is None:
+                encoded_packet = _encode_osc_message(address, payload)
+            client.send_packet(encoded_packet)
+            return encoded_packet
+
+        send_message = getattr(client, "send_message", None)
+        if send_message is None:
+            raise AttributeError("OSC client does not provide send_message")
+        send_message(address, payload)
+        return encoded_packet
 
     def _resolve_destination_ports(
         self, message: tuple[int, int, int]

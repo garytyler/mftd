@@ -5,33 +5,28 @@ implementation. The goal is to improve message throughput and latency without
 redesigning the program from scratch.
 
 ## Consider tighter event-loop integration
-- The bridge currently mixes RtMidi callbacks with the asyncio loop by posting
-  work with `call_soon_threadsafe`. Establishing the MIDI input on the asyncio
-  thread (via `asyncio.to_thread` or a background task that drains a
-  `queue.SimpleQueue`) would let the handler run directly on the loop and avoid
-  cross-thread hops for each message, while preserving the existing public
-  interface.【F:mftd/bridge.py†L134-L227】
-- Likewise, using an `asyncio.DatagramTransport` for OSC output (instead of the
-  python-osc client) would allow writing to sockets with `transport.sendto`
-  directly from the loop without leaving the asyncio concurrency model. This can
-  be done behind a thin adapter so callers still interact with the same
-  high-level API.【F:mftd/bridge.py†L18-L213】
-- The recent switch from a polling shutdown loop to an `asyncio.Event`
-  dramatically reduced the bridge's idle CPU usage (no more wake-ups every
-  50–100 ms) and shortened shutdown latency, but it does not change how quickly
-  MIDI or OSC messages are forwarded. Runtime throughput is still bounded by the
-  per-message scheduling and encoding work described below.【F:run_bridge.py†L164-L245】
+- The bridge now establishes the MIDI input while running on the asyncio event
+  loop and routes RtMidi callbacks through an `asyncio.Queue`, so
+  `_process_midi_event` executes directly on the loop thread without any per
+  message cross-thread hops.【F:mftd/bridge.py†L151-L301】
+- Outbound OSC traffic is sent by asyncio datagram transports through a thin
+  adapter, keeping socket writes on the loop and preserving the bridge's public
+  API.【F:mftd/bridge.py†L18-L238】
+- The switch from a polling shutdown loop to an `asyncio.Event` dramatically
+  reduced idle CPU usage (no more wake-ups every 50–100 ms) and shortened
+  shutdown latency, but it does not change how quickly MIDI or OSC messages are
+  forwarded. Runtime throughput is still bounded by the work described in the
+  sections below.【F:run_bridge.py†L181-L246】
 
 ## Reduce per-message scheduling overhead
-- `MidiToOscForwarder._handle_midi_message` currently schedules a separate
-  `call_soon_threadsafe` for every OSC port, and also allocates a closure for
-  each send (`_send`). Collapsing this into a single loop that is scheduled once
-  per MIDI event (or even sending synchronously from the callback when it is
-  already running on the event loop thread) would reduce the number of context
-  switches and object allocations.【F:mftd/bridge.py†L239-L282】
-- Switching from the nested function to a small helper method allows reuse of a
-  pre-created `functools.partial` or direct `call_soon_threadsafe` of the method,
-  eliminating repeated closure construction.【F:mftd/bridge.py†L239-L282】
+- MIDI messages are now scheduled at most once per callback: the RtMidi thread
+  posts the event into the shared `asyncio.Queue` via a pre-built
+  `call_soon_threadsafe` partial, and the loop drains the queue sequentially.
+  When callbacks already run on the loop thread, the handler forwards the
+  message synchronously.【F:mftd/bridge.py†L163-L301】
+- `_send_osc_message` reuses a cached OSC packet for transports that expose a
+  `send_packet` method, eliminating repeated closure allocation and redundant
+  encoding when broadcasting to multiple ports.【F:mftd/bridge.py†L328-L365】
 
 ## Avoid repeated OSC address work for static mappings
 - `MessageRouter.getAddress` builds string keys, performs dictionary lookups and
