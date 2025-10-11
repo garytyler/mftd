@@ -25,6 +25,8 @@ class MftConfigInitializer:
     def configureDevice(self):
         self._setDeviceAndEncoderConfigs(self._device, self._encoders)
         self._setEncoderAnimationAndBrightnessConfigs()
+        self._mft.set_encoder_rgb_brightness(14, EncoderRgbBrightness.LOW)
+        self._mft.set_encoder_rgb_brightness(15, EncoderRgbBrightness.LOW)
 
     def _setDeviceAndEncoderConfigs(self, device, encoders):
         for config in self._encoders:
@@ -60,11 +62,14 @@ class MftConfigInitializer:
             indicator_global_brightness=115,
         )
 
-    @staticmethod
-    def getEncoderConfigs():
+    def getEncoderConfigs(self):
         encoders = []
 
-        def _setupEncoderConfig(index: int, relative: bool, inactive_color: Color):
+        def _setupEncoderConfig(
+            index: int,
+            relative: bool,
+            inactive_color: Color,
+        ):
             encoders[index].detent = SysexBool.TRUE if relative else SysexBool.FALSE
             encoders[index].encoder_midi_type = (
                 EncoderMidiMessageType.SEND_RELATIVE
@@ -120,8 +125,8 @@ class MftConfigInitializer:
 
         # Scene
         _setupEncoderConfig(10, True, Color.BLACK)
-        _setupEncoderConfig(14, True, Color.BLACK)
         _setupEncoderConfig(11, True, Color.BLACK)
+        _setupEncoderConfig(14, True, Color.WHITE)
         _setupEncoderConfig(15, True, Color.WHITE)
 
         return encoders

@@ -155,6 +155,7 @@ class EncoderAnimation(IntEnum):
 
     # RGB Brightness Values
     RGB_BRIGHTNESS_OFF = 17  # Turn off RGB brightness
+    RGB_BRIGHTNESS_LOW = 24
     RGB_BRIGHTNESS_MID = 32  # Set RGB brightness to mid level
     RGB_BRIGHTNESS_MAX = 47  # Set RGB brightness to maximum level
 
@@ -192,6 +193,7 @@ class EncoderRgbBrightness(IntEnum):
     """Convenience enum for RGB LED brightness levels."""
 
     OFF = EncoderAnimation.RGB_BRIGHTNESS_OFF
+    LOW = EncoderAnimation.RGB_BRIGHTNESS_LOW
     MID = EncoderAnimation.RGB_BRIGHTNESS_MID
     MAX = EncoderAnimation.RGB_BRIGHTNESS_MAX
 
