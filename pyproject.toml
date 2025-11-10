@@ -7,7 +7,6 @@ requires-python = ">=3.11"
 authors = [ { name = "Gary Tyler", email = "mail@garytyler.com" } ]
 dependencies = [
     "python-rtmidi>=1.5.8",
-    "python-osc>=1.8",
     "pytest>=6.2.5",
     "pytest-asyncio>=0.23",
     "pytest-mock>=3.6.1",

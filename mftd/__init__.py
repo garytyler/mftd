@@ -19,7 +19,6 @@ from mftd.constants import (
     SideSwitchAction,
     Encoders,
 )
-from mftd.bridge import MidiOscBridge, MidiToOscForwarder, OscToMidiForwarder
 from mftd.device import DeviceConfig
 from mftd.encoder import EncoderConfig
 from mftd.mft import MidiFighterTwister
