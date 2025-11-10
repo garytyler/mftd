@@ -1,0 +1,15 @@
+NOTICE
+======
+
+This project includes code derived from an original work distributed under the
+GNU General Public License version 3 (GPLv3).
+
+Original source: https://github.com/sina-cb/pymft
+The original project did not contain explicit copyright statements and is
+presumed copyrighted by its author(s) as of publication.
+
+Modifications and new code:
+Copyright (C) 2025 Gary Tyler McLeod
+Licensed under the GNU General Public License v3 (or any later version).
+
+See the LICENSE file or <https://www.gnu.org/licenses/gpl-3.0.html> for details.
