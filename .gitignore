@@ -193,6 +193,13 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Touch Designer
+Movie/
+Backup/
+*.[0-9]*.toe
+TouchDesignerCrash*.dmp
+CrashAutoSave*.toe
+
 # Other
 .idea/
 .vscode/

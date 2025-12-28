@@ -16,7 +16,11 @@ class TdMidiOutput(MidiOutput):
         if midi_out_chop:
             self.chop = midi_out_chop
         else:
-            self.chop = me.parent().op(self.midi_out_chop_name)  # type: ignore[name-defined]  # noqa: F821
+            self.chop = me.parent().op(self.midi_out_chop_name)
+            if not self.chop:
+                self.chop = me.parent().create(
+                    self.midi_out_chop_type, self.midi_out_chop_name
+                )
 
     def get_port_count(self) -> int:  # pragma: no cover - TD only
         return 1
