@@ -46,9 +46,6 @@ __all__ = [
     "EncoderConfig",
     "MidiFighterTwister",
     "TdMidiOutput",
-    "MidiToOscForwarder",
-    "OscToMidiForwarder",
-    "MidiOscBridge",
 ]
 
 
