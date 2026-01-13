@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "mftd"
 version = "0.1.0"
@@ -5,8 +9,23 @@ description = "Python Midi Fighter Twister configuration for Touch Designer"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [ { name = "Gary Tyler", email = "mail@garytyler.com" } ]
+license = "GPL-3.0-or-later"
+keywords = ["midi", "midi-fighter-twister", "touchdesigner", "hardware-controller", "dj-controller"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: MIDI",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "python-rtmidi>=1.5.8",
+]
+
+[project.optional-dependencies]
+dev = [
     "pytest>=6.2.5",
     "pytest-asyncio>=0.23",
     "pytest-mock>=3.6.1",
@@ -14,6 +33,14 @@ dependencies = [
     "ruff>=0.13.1",
     "mypy>=1.18.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/garytyler/mftd"
+Repository = "https://github.com/garytyler/mftd"
+Issues = "https://github.com/garytyler/mftd/issues"
+
+[tool.setuptools]
+packages = ["mftd"]
 
 [tool.uv.pip]
 link-mode = "copy"
