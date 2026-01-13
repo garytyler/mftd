@@ -1,6 +1,6 @@
 # mftd
 
-A thin, adaptable API for integrating [Midi Fighter Twister](https://www.midifighter.com/#Twister) midi controllers in Touch Designer projects.
+A thin, adaptable API for programatically configuring [Midi Fighter Twister](https://www.midifighter.com/#Twister) midi controllers, and integrating them in Touch Designer projects.
 
 ### Build
 
@@ -11,7 +11,7 @@ Generate inlined source using [`inline-importer`](https://inline-importer.readth
 rm -f dist/mftd.py
 mkdir -p dist
 
-# Build 
+# Build
 inline-python -p mftd -e mftd/__init__.py -o dist/mftd.py
 ```
 
