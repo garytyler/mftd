@@ -254,7 +254,7 @@ class EncoderIndicatorDisplayType(IntEnum):
     DOT = 0  # Indicator displays a single LED
     BAR = 1  # Indicator displays a bar graph
     BLENDED_BAR = 2  # Indicator displays a blended bar graph
-    BLENDED_DOT = 3  # Indicator displays a blended dot
+    SPREAD = 3  # Indicator displays a blended bar that starts in the middle and spreads in both directions
 
 
 class SysexCommand(IntEnum):
