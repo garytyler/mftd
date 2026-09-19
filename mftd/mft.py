@@ -161,6 +161,34 @@ class MidiFighterTwister:
             channel=channel,
         )
 
+    def send_cc(
+        self,
+        cc: int,
+        value: int,
+        channel: int = 0,
+    ) -> None:
+        """
+        Send a Control Change (CC) message to the device.
+
+        Args:
+            cc: CC number (0-127)
+            value: CC value (0-127)
+            channel: MIDI channel (0-15, default 0)
+        """
+        if not self.midi_output:
+            raise RuntimeError("MIDI output is not available.")
+
+        if not 0 <= channel <= 15:
+            raise ValueError("channel must be in range 0-15")
+        if not 0 <= cc <= 127:
+            raise ValueError("cc must be in range 0-127")
+        if not 0 <= value <= 127:
+            raise ValueError("value must be in range 0-127")
+
+        status = 0xB0 | (channel & 0x0F)
+        message = [status, cc, value]
+        self.midi_output.send_message(message)
+
     def close(self):
         midi_input = getattr(self, "midi_input", None)
         if midi_input:
