@@ -32,6 +32,16 @@ from mftd.sysex import MftSysexApi
 # Address -> wire value, exactly as a 2026 device reports a factory config.
 FIRMWARE_2026_DEVICE_ADDRS = {33, 34, 35, 36, 37, 38}
 
+# The factory value each address holds, read from the Utility plugin's
+# CONFIG.addEnum/addBool calls (device.mf_twister.js:306-309), where the
+# argument after the option list is the default index.
+FIRMWARE_2026_DEFAULTS = {
+    33: ColorMap.CLASSIC,
+    36: SleepTimer.MIN_60,
+    37: SleepAnimation.RAINBOW_WAVE,
+    38: SysexBool.TRUE,
+}
+
 
 @pytest.mark.parametrize(
     "member, value",
@@ -83,15 +93,25 @@ def test_device_config_declares_the_2026_addresses():
 def test_device_defaults_match_firmware_defaults():
     """A bare DeviceConfig should describe a factory device, not a house style.
 
-    color_map is the one deliberate exception.  Color's members are Expanded
-    bytes, so defaulting to CLASSIC would make every named colour in the
-    library select a different colour with no error.
+    addr 33 is the one exception and is covered separately below.
     """
     config = DeviceConfig()
-    assert config.color_map is ColorMap.EXPANDED
-    assert config.sleep_timer is SleepTimer.MIN_60
-    assert config.sleep_animation is SleepAnimation.RAINBOW_WAVE
-    assert config.bank_change_animations is SysexBool.TRUE
+    assert config.sleep_timer is FIRMWARE_2026_DEFAULTS[36]
+    assert config.sleep_animation is FIRMWARE_2026_DEFAULTS[37]
+    assert config.bank_change_animations is FIRMWARE_2026_DEFAULTS[38]
+
+
+def test_color_map_default_diverges_from_firmware_on_purpose():
+    """addr 33 is where the library knowingly departs from the factory value.
+
+    Color's members are Expanded bytes, so a CLASSIC default would make every
+    named colour in the library select a different colour with no error.  Both
+    halves are pinned separately: the firmware's own value stays on record, so
+    withdrawing the divergence -- or discovering the factory value is not what
+    the Utility plugin claims -- fails here rather than drifting quietly.
+    """
+    assert FIRMWARE_2026_DEFAULTS[33] is ColorMap.CLASSIC
+    assert DeviceConfig().color_map is ColorMap.EXPANDED
 
 
 @pytest.mark.parametrize(
