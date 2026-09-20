@@ -114,18 +114,28 @@ class Color(IntEnum):
     * ``S_*``, promoted from the palette's unstructured upper half.  **An
       ``S_`` name has only the shades listed here, never a guaranteed four**,
       and its suffix means position in that colour's own ramp rather than an
-      absolute brightness: ``S_GOLD_DARK`` is roughly twice as bright as any
-      family ``_DARK``.
+      absolute brightness.  Family ``_DARK`` peaks at channel 82-127, while
+      ``S_OLIVE_DARK`` sits below that range at 63 and ``S_PERIWINKLE_DARK``
+      above it at 233, near a family ``_FULL``.
 
-    Bare hue names such as ``RED`` are deliberately absent.  They existed in
-    0.3.0 with Classic values, and reusing them would silently return a
-    different colour; ``Color.RED`` now raises ``AttributeError`` instead.
+    Removed in 0.4.0, all of which existed in 0.3.0 with Classic values and
+    now raise ``AttributeError``:
+
+    * Bare hues ``RED``, ``GREEN`` and ``BLUE``.  Deliberately not reused:
+      the same name against the Expanded map returns a different colour, and
+      a rename is louder than a silent change of meaning.
+    * ``PRIMARY``, ``AUX`` and ``USER``, which were aliases of those hues.
+    * ``DEFAULT_DETENT`` (byte 63), which is not a named member of this map.
+
+    ``WHITE`` is the one name kept across the change, and its byte moved from
+    127 to 3.  Code that stored the old byte reads back as a plain ``int``,
+    since 127 is no longer a member.
     """
 
     # --- Neutrals -------------------------------------------------------
     BLACK = 0  # #000000
     GREY_DARKEST = 1  # #1E1E1E
-    GREY_DARK = 71  # #20202025
+    GREY_DARK = 71  # #202020
     GREY_FULL = 117  # #404040
     GREY_LIGHT = 118  # #757575
     GREY_LIGHTEST = 2  # #7F7F7F
@@ -392,13 +402,14 @@ class EncoderIndicatorDisplayType(IntEnum):
 class ColorMap(IntEnum):
     """Which palette RGB colour values are interpreted against (2026, addr 33).
 
-    ``Color``'s members are Classic values.  Selecting ``EXPANDED`` repoints
-    every velocity at the Launchpad-style palette, so the same byte produces a
-    different colour and ``Color`` no longer describes the hardware.
+    ``Color``'s members are Expanded values.  Under ``CLASSIC`` the same bytes
+    select unrelated colours from the pre-2026 hue sweep, so every name in
+    ``Color`` describes something other than what the hardware shows -- and
+    does so silently, since the byte stays valid under either map.
     """
 
-    CLASSIC = 0  # The pre-2026 hue sweep; what Color's members assume
-    EXPANDED = 1  # Launchpad-style palette with true primaries and greys
+    CLASSIC = 0  # The pre-2026 hue sweep; Color's names do not apply
+    EXPANDED = 1  # Launchpad-style palette; what Color's members assume
 
 
 class SleepTimer(IntEnum):
