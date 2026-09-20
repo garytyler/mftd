@@ -84,7 +84,7 @@ class MidiFighterTwister:
         if not self.midi_output or not self.midi_input:
             if is_td_available():
                 raise RuntimeError(
-                    "get_device_config() is not supported in TouchDesigner."
+                    "get_encoder_config() is not supported in TouchDesigner."
                 )
             elif not self.midi_output:
                 raise RuntimeError("MIDI output is not available.")
