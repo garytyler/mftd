@@ -87,14 +87,14 @@ def test_set_encoder_config(rtmidi_stub):
     api = MftSysexApi
     out = rtmidi_stub.MidiOut()
     cfg = EncoderConfig()
-    cfg.active_color = constants.Color.RED
+    cfg.active_color = constants.Color.RED_FULL
 
     out_data = cfg.to_out_dict()
     api.set_encoder_config(out, 0, out_data)
 
     assert out.messages[0][0] == 0xF0
     assert out.messages[0][4] == constants.SysexCommand.BULK_XFER
-    assert constants.Color.RED in out.messages[0]
+    assert constants.Color.RED_FULL in out.messages[0]
     assert out.messages[0][-1] == 0xF7
 
 
@@ -126,7 +126,7 @@ def test_get_encoder_config(rtmidi_stub):
         encoder_midi_number_addr,  # Add address for encoder_midi_number
         0,  # Value for encoder_midi_number (using the test index)
         19,
-        consts.Color.BLUE,
+        consts.Color.BLUE_FULL,
         21,
         consts.DetentColor.RED,
         0xF7,
@@ -135,7 +135,7 @@ def test_get_encoder_config(rtmidi_stub):
 
     in_data = api.get_encoder_config(out, inp, 0)
     cfg = EncoderConfig.from_in_dict(in_data)
-    assert cfg.active_color == consts.Color.BLUE
+    assert cfg.active_color == consts.Color.BLUE_FULL
     assert cfg.detent_color == consts.DetentColor.RED
 
 

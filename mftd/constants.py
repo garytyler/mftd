@@ -99,28 +99,142 @@ class SystemMessage(IntEnum):
 
 
 class Color(IntEnum):
+    """Colour bytes for the 2026 Expanded map.
+
+    Only meaningful while the device is on ``ColorMap.EXPANDED``; under
+    ``ColorMap.CLASSIC`` the same bytes select unrelated colours, which is why
+    ``DeviceConfig.color_map`` defaults to ``EXPANDED``.
+
+    Names follow one pattern, ``{BASE}_{LIGHT|FULL|DARK|DARKEST}``:
+
+    * 14 hue families, every one carrying all four shades.
+    * ``GREY_*``, which adds ``LIGHTEST`` -- the only place that fifth word
+      appears -- plus ``BLACK`` and ``WHITE`` as endpoints.  Every ``GREY_``
+      name has a ``GRAY_`` alias for the same byte.
+    * ``S_*``, promoted from the palette's unstructured upper half.  **An
+      ``S_`` name has only the shades listed here, never a guaranteed four**,
+      and its suffix means position in that colour's own ramp rather than an
+      absolute brightness: ``S_GOLD_DARK`` is roughly twice as bright as any
+      family ``_DARK``.
+
+    Bare hue names such as ``RED`` are deliberately absent.  They existed in
+    0.3.0 with Classic values, and reusing them would silently return a
+    different colour; ``Color.RED`` now raises ``AttributeError`` instead.
     """
-    MIDI values for setting RGB colors on the encoders.
-    Refer to the "Encoders Push Switches" section in the PDF.
-    """
 
-    DEFAULT_ACTIVE = 25  # Typically red
-    DEFAULT_INACTIVE = 113  # Typically blue
-    DEFAULT_DETENT = 63  # Default detent color, typically pink
+    # --- Neutrals -------------------------------------------------------
+    BLACK = 0  # #000000
+    GREY_DARKEST = 1  # #1E1E1E
+    GREY_DARK = 71  # #20202025
+    GREY_FULL = 117  # #404040
+    GREY_LIGHT = 118  # #757575
+    GREY_LIGHTEST = 2  # #7F7F7F
+    WHITE = 3  # #FFFFFF
 
-    BLACK = 0
-    BLUE = 1
-    LIGHT_BLUE = 19
-    LIGHT_GREEN = 40
-    GREEN = 50
-    YELLOW = 64
-    RED = 85
-    LIGHT_RED = 88
-    WHITE = 127
+    # US spellings, aliases of the members above rather than new colours.
+    GRAY_DARKEST = GREY_DARKEST
+    GRAY_DARK = GREY_DARK
+    GRAY_FULL = GREY_FULL
+    GRAY_LIGHT = GREY_LIGHT
+    GRAY_LIGHTEST = GREY_LIGHTEST
 
-    PRIMARY = BLUE  # Default color for primary channel
-    AUX = RED  # Default color for aux channel
-    USER = GREEN  # Default color for user-defined color
+    # --- Hue families: all four shades, always ---------------------------
+    # red, hue 0 deg
+    RED_LIGHT = 4  # #FF4C4C
+    RED_FULL = 5  # #FF0000
+    RED_DARK = 6  # #7F0000
+    RED_DARKEST = 7  # #1E0000
+    # orange, hue 20 deg
+    ORANGE_LIGHT = 8  # #FFBD6C
+    ORANGE_FULL = 9  # #FF5400
+    ORANGE_DARK = 10  # #591D00
+    ORANGE_DARKEST = 11  # #271B00
+    # yellow, hue 60 deg
+    YELLOW_LIGHT = 12  # #FFFF4C
+    YELLOW_FULL = 13  # #FFFF00
+    YELLOW_DARK = 14  # #595900
+    YELLOW_DARKEST = 15  # #191900
+    # lime, hue 100 deg
+    LIME_LIGHT = 16  # #88FF4C
+    LIME_FULL = 17  # #54FF00
+    LIME_DARK = 18  # #1D5900
+    LIME_DARKEST = 19  # #142B00
+    # green, hue 120 deg
+    GREEN_LIGHT = 20  # #4CFF4C
+    GREEN_FULL = 21  # #00FF00
+    GREEN_DARK = 22  # #007F00
+    GREEN_DARKEST = 23  # #001E00
+    # emerald, hue 126 deg
+    EMERALD_LIGHT = 24  # #4CFF5E
+    EMERALD_FULL = 25  # #00FF19
+    EMERALD_DARK = 26  # #00590D
+    EMERALD_DARKEST = 27  # #001902
+    # jade, hue 133 deg
+    JADE_LIGHT = 28  # #4CFF88
+    JADE_FULL = 29  # #28F656
+    JADE_DARK = 30  # #0B681F
+    JADE_DARKEST = 31  # #002413
+    # mint, hue 156 deg
+    MINT_LIGHT = 32  # #4CFFB7
+    MINT_FULL = 33  # #00FF99
+    MINT_DARK = 34  # #005935
+    MINT_DARKEST = 35  # #001912
+    # azure, hue 200 deg
+    AZURE_LIGHT = 36  # #4CC3FF
+    AZURE_FULL = 37  # #00A9FF
+    AZURE_DARK = 38  # #004152
+    AZURE_DARKEST = 39  # #001019
+    # cobalt, hue 220 deg
+    COBALT_LIGHT = 40  # #4C88FF
+    COBALT_FULL = 41  # #0055FF
+    COBALT_DARK = 42  # #001D59
+    COBALT_DARKEST = 43  # #000819
+    # blue, hue 240 deg
+    BLUE_LIGHT = 44  # #4C4CFF
+    BLUE_FULL = 45  # #0000FF
+    BLUE_DARK = 46  # #00007F
+    BLUE_DARKEST = 47  # #00001E
+    # violet, hue 260 deg
+    VIOLET_LIGHT = 48  # #874CFF
+    VIOLET_FULL = 49  # #5400FF
+    VIOLET_DARK = 50  # #190064
+    VIOLET_DARKEST = 51  # #0F0030
+    # magenta, hue 300 deg
+    MAGENTA_LIGHT = 52  # #FF4CFF
+    MAGENTA_FULL = 53  # #FF00FF
+    MAGENTA_DARK = 54  # #590059
+    MAGENTA_DARKEST = 55  # #190019
+    # rose, hue 340 deg
+    ROSE_LIGHT = 56  # #FF4C87
+    ROSE_FULL = 57  # #FF0054
+    ROSE_DARK = 58  # #59001D
+    ROSE_DARKEST = 59  # #220013
+
+    # --- Selected from the palette's unstructured range ------------------
+    # Partial ramps: an S_ name has only the shades listed here.
+    S_TRUE_ORANGE = 96  # #FF7F00
+    S_BROWN = 126  # #B35F00
+    S_BROWN_DARK = 105  # #693C1C
+    S_BROWN_DARKEST = 83  # #402100
+    S_RUST = 61  # #993500
+    S_GOLD = 109  # #FFE126
+    S_GOLD_DARK = 97  # #B9B000
+    S_CHARTREUSE = 74  # #AFED06
+    S_CHARTREUSE_DARK = 111  # #67B50F
+    S_OLIVE = 62  # #795100
+    S_OLIVE_DARK = 125  # #3F3100
+    S_MIDNIGHT_BLUE = 112  # #1E1E30
+    S_PALE_CYAN = 119  # #E0FFFF
+    S_PERIWINKLE = 115  # #9A99FF
+    S_PERIWINKLE_DARK = 93  # #877FE9
+    S_PURPLE = 94  # #D31DFF
+    S_MAGENTA_ROSE = 82  # #B21A7D
+
+    # --- Firmware factory bytes ------------------------------------------
+    # What a factory device reports, kept so EncoderConfig's defaults still
+    # describe one.  These are byte values, not colour choices.
+    DEFAULT_ACTIVE = BLUE_FULL
+    DEFAULT_INACTIVE = RED_FULL
 
 
 class DetentColor(IntEnum):

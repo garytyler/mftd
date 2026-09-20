@@ -67,8 +67,11 @@ class DeviceConfig(BaseModel):
     # --- 2026 firmware additions (addrs 33-38) ---
     # Defaults below are the firmware's own, so a DeviceConfig() still
     # describes a factory device rather than imposing a house style.
+    # Departs from the "defaults mirror the factory device" rule above, and
+    # deliberately: Color's members are Expanded bytes, so a CLASSIC default
+    # would make every named colour in the library select something else.
     color_map: ColorMap = field(
-        default=ColorMap.CLASSIC,
+        default=ColorMap.EXPANDED,
         metadata={"addr": 33},
     )
     encoder_animation_channel: MidiChannel = field(

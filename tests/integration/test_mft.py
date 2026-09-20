@@ -83,14 +83,14 @@ def test_get_device_config(mft):
 
 def test_set_encoder_config(mft):
     cfg = EncoderConfig()
-    cfg.active_color = constants.Color.RED
+    cfg.active_color = constants.Color.RED_FULL
 
     mft.set_encoder_config(0, cfg)
 
     msg = mft.midi_output.messages[0]
     assert msg[0] == 0xF0
     assert msg[4] == constants.SysexCommand.BULK_XFER
-    assert constants.Color.RED in msg
+    assert constants.Color.RED_FULL in msg
     assert msg[-1] == 0xF7
 
 
@@ -116,7 +116,7 @@ def test_get_encoder_config(mft):
         encoder_midi_number_addr,
         0,
         19,
-        constants.Color.BLUE,
+        constants.Color.BLUE_FULL,
         21,
         constants.DetentColor.RED,
         0xF7,
@@ -124,7 +124,7 @@ def test_get_encoder_config(mft):
     mft.midi_input.messages.append((resp, None))
 
     cfg = mft.get_encoder_config(0)
-    assert cfg.active_color == constants.Color.BLUE
+    assert cfg.active_color == constants.Color.BLUE_FULL
     assert cfg.detent_color == constants.DetentColor.RED
 
 

@@ -81,9 +81,14 @@ def test_device_config_declares_the_2026_addresses():
 
 
 def test_device_defaults_match_firmware_defaults():
-    """A bare DeviceConfig should describe a factory device, not a house style."""
+    """A bare DeviceConfig should describe a factory device, not a house style.
+
+    color_map is the one deliberate exception.  Color's members are Expanded
+    bytes, so defaulting to CLASSIC would make every named colour in the
+    library select a different colour with no error.
+    """
     config = DeviceConfig()
-    assert config.color_map is ColorMap.CLASSIC
+    assert config.color_map is ColorMap.EXPANDED
     assert config.sleep_timer is SleepTimer.MIN_60
     assert config.sleep_animation is SleepAnimation.RAINBOW_WAVE
     assert config.bank_change_animations is SysexBool.TRUE

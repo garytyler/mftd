@@ -24,12 +24,12 @@ def test_get_set_encoder_config_e2e(mft, encoder_config, encoder_index) -> None:
     old_config = encoder_config
 
     # Ensure we pick a different color value
-    if old_config.active_color == constants.Color.RED:
-        new_color = constants.Color.BLUE
-    elif old_config.active_color == constants.Color.BLUE:
-        new_color = constants.Color.GREEN  # or another color
+    if old_config.active_color == constants.Color.RED_FULL:
+        new_color = constants.Color.BLUE_FULL
+    elif old_config.active_color == constants.Color.BLUE_FULL:
+        new_color = constants.Color.GREEN_FULL  # or another color
     else:
-        new_color = constants.Color.RED
+        new_color = constants.Color.RED_FULL
 
     new_config = deepcopy(old_config)
     new_config.active_color = new_color
