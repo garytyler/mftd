@@ -133,9 +133,13 @@ class MidiFighterTwister:
         self,
         encoder_index: int,
         brightness: EncoderIndicatorBrightness,
-        channel: MidiChannel = MidiChannel.ANIMATIONS_AND_BRIGHTNESS,
+        channel: MidiChannel = MidiChannel.SWITCH_ANIMATION,
     ) -> None:
-        """Set the indicator ring brightness for a single encoder."""
+        """Set the indicator ring brightness for a single encoder.
+
+        Rings answer on the ring animation channel (5) only — the same value
+        sent on channel 2 reaches the device and is discarded.
+        """
         if not self.midi_output:
             raise RuntimeError("MIDI output is not available.")
         return self.api.set_encoder_animation_and_brightness(

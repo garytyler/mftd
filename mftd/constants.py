@@ -21,10 +21,15 @@ class MidiChannel(IntEnum):
 
     ROTARY_ENCODER = 0  # For rotary encoder messages (knob twists)
     SWITCH_AND_COLOR = 1  # For encoder switch and color messages
-    ANIMATIONS_AND_BRIGHTNESS = 2  # For encoder animations and brightness messages
+    # The two LED groups share one animation/brightness value space and are
+    # told apart by channel alone.  Verified against 2026 firmware: a ring
+    # brightness value sent on channel 2 is silently ignored, while the same
+    # value on channel 5 takes effect.  Both member names predate that check
+    # and describe the wrong group; renaming them is a separate task.
+    ANIMATIONS_AND_BRIGHTNESS = 2  # RGB (button) LED animations and brightness
     SYSTEM = 3  # For system messages (bank changes, side button actions)
     SHIFT = 4  # For shift encoder messages
-    SWITCH_ANIMATION = 5  # For switch animation messages
+    SWITCH_ANIMATION = 5  # LED ring (indicator) animations and brightness
     SEQUENCER = 7  # For sequencer messages
 
 
@@ -55,6 +60,13 @@ class SystemMessage(IntEnum):
     BANK2 = 1  # CC value for Bank 2
     BANK3 = 2  # CC value for Bank 3
     BANK4 = 3  # CC value for Bank 4
+    # Banks 5-8 exist only on the 8-bank firmware image.  Their bank-change
+    # CCs are documented; their side-button CCs are not — Appendix 1 of the
+    # 2026 guide still covers banks 1-4 only, so they are deliberately absent.
+    BANK5 = 4  # CC value for Bank 5
+    BANK6 = 5  # CC value for Bank 6
+    BANK7 = 6  # CC value for Bank 7
+    BANK8 = 7  # CC value for Bank 8
 
     # CC values for side buttons in each bank
     BANK1_LEFT1 = 8
@@ -224,16 +236,22 @@ class EncoderMovementType(IntEnum):
 
 
 class EncoderSwitchActionType(IntEnum):
-    """Encoder Switch Action Type Constants. Refer to the "Encoder Settings" section in the PDF."""
+    """Encoder switch actions, numbered as the 2026 firmware orders them.
+
+    ``ENC_RESET_VALUE_MAX`` was inserted at 5, shifting every later member up
+    by one — notably ``SHIFT_HOLD``, which was 6.  Pre-2026 firmware numbers
+    these differently and is not supported.
+    """
 
     CC_HOLD = 0  # Switch sends a CC message
     CC_TOGGLE = 1  # Switch toggles CC
     NOTE_HOLD = 2  # Switch sends a Note On
     NOTE_TOGGLE = 3  # Switch toggles Note On/Off
-    ENC_RESET_VALUE = 4  # Switch resets the encoder value
-    ENC_FINE_ADJUST = 5  # Encoder sensitivity reduced for fine adjustment
-    SHIFT_HOLD = 6  # Encoder sends a secondary value
-    SHIFT_TOGGLE = 7  # Switch toggles between primary/secondary values
+    ENC_RESET_VALUE = 4  # Resets the encoder to 0, or 63 when detent is on
+    ENC_RESET_VALUE_MAX = 5  # Resets the encoder to 127, or 63 when detent is on
+    ENC_FINE_ADJUST = 6  # Encoder sensitivity reduced for fine adjustment
+    SHIFT_HOLD = 7  # Encoder sends a secondary value
+    SHIFT_TOGGLE = 8  # Switch toggles between primary/secondary values
 
 
 class EncoderMidiMessageType(IntEnum):
@@ -255,6 +273,38 @@ class EncoderIndicatorDisplayType(IntEnum):
     BAR = 1  # Indicator displays a bar graph
     BLENDED_BAR = 2  # Indicator displays a blended bar graph
     SPREAD = 3  # Indicator displays a blended bar that starts in the middle and spreads in both directions
+
+
+class ColorMap(IntEnum):
+    """Which palette RGB colour values are interpreted against (2026, addr 33).
+
+    ``Color``'s members are Classic values.  Selecting ``EXPANDED`` repoints
+    every velocity at the Launchpad-style palette, so the same byte produces a
+    different colour and ``Color`` no longer describes the hardware.
+    """
+
+    CLASSIC = 0  # The pre-2026 hue sweep; what Color's members assume
+    EXPANDED = 1  # Launchpad-style palette with true primaries and greys
+
+
+class SleepTimer(IntEnum):
+    """How long the unit idles before sleeping (2026, addr 36)."""
+
+    OFF = 0
+    MIN_1 = 1
+    MIN_3 = 2
+    MIN_5 = 3
+    MIN_10 = 4
+    MIN_20 = 5
+    MIN_30 = 6
+    MIN_60 = 7
+
+
+class SleepAnimation(IntEnum):
+    """What the LEDs do once the sleep timer elapses (2026, addr 37)."""
+
+    TURN_OFF = 0  # All LEDs off until a control is touched
+    RAINBOW_WAVE = 1  # Diagonal colour wave across the RGB LEDs
 
 
 class SysexCommand(IntEnum):
@@ -280,9 +330,12 @@ class SysexBool(IntEnum):
 
 
 class SideSwitchAction(IntEnum):
-    """
-    Actions for side switch buttons.
-    Refer to the "Global Settings" section in the PDF.
+    """Side switch actions, numbered as the 2026 firmware orders them.
+
+    The 2026 spec inserted the two shift-page toggles at 6-7 and ``BANK_SELECT``
+    at 10, and extended the direct bank jumps from four to eight.  Everything
+    after ``SHIFT_PAGE2`` therefore moved: ``CYCLE_BANK`` went from 0x0C to
+    0x13, and 0x0C now selects Bank 2.
     """
 
     CC_HOLD = 0x00  # Sends a CC message
@@ -291,13 +344,20 @@ class SideSwitchAction(IntEnum):
     NOTE_TOGGLE = 0x03  # Toggles Note On/Off
     SHIFT_PAGE1 = 0x04  # Activates a secondary 'Shift' page
     SHIFT_PAGE2 = 0x05  # Activates a secondary 'Shift' page
-    NEXT_BANK = 0x06  # Increments the bank selection
-    PREV_BANK = 0x07  # Decrements the bank selection
-    BANK1 = 0x08  # Selects Bank 1
-    BANK2 = 0x09  # Selects Bank 2
-    BANK3 = 0x0A  # Selects Bank 3
-    BANK4 = 0x0B  # Selects Bank 4
-    CYCLE_BANK = 0x0C  # Cycles through the banks
+    SHIFT_PAGE1_TOGGLE = 0x06  # Latches the 'Shift' page instead of holding it
+    SHIFT_PAGE2_TOGGLE = 0x07  # Latches the 'Shift' page instead of holding it
+    NEXT_BANK = 0x08  # Increments the bank selection
+    PREV_BANK = 0x09  # Decrements the bank selection
+    BANK_SELECT = 0x0A  # Hold, then press an encoder to choose a bank
+    BANK1 = 0x0B  # Selects Bank 1
+    BANK2 = 0x0C  # Selects Bank 2
+    BANK3 = 0x0D  # Selects Bank 3
+    BANK4 = 0x0E  # Selects Bank 4
+    BANK5 = 0x0F  # Selects Bank 5 (8-bank firmware only)
+    BANK6 = 0x10  # Selects Bank 6 (8-bank firmware only)
+    BANK7 = 0x11  # Selects Bank 7 (8-bank firmware only)
+    BANK8 = 0x12  # Selects Bank 8 (8-bank firmware only)
+    CYCLE_BANK = 0x13  # Cycles through the banks
 
 
 @dataclass

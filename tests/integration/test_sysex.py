@@ -33,25 +33,34 @@ def test_get_global_config(rtmidi_stub):
     inp = rtmidi_stub.MidiIn()
     consts = constants
 
-    response_values = []
     name_to_addr = {
         f.name: f.metadata["addr"] for f in fields(DeviceConfig) if "addr" in f.metadata
     }
-    for key, val in {
-        "system_midi_channel": int(MidiChannel.SYSTEM),
-        "super_knob_start": 40,
-        "super_knob_end": 90,
-        "rgb_led_brightness": 99,
-        "indicator_global_brightness": 82,
-        "bank_side_buttons": int(SysexBool.FALSE),
-        "left_button_1_function": int(SideSwitchAction.BANK1),
-        "left_button_2_function": int(SideSwitchAction.BANK2),
-        "left_button_3_function": int(SideSwitchAction.BANK3),
-        "right_button_1_function": int(SideSwitchAction.BANK4),
-        "right_button_2_function": int(SideSwitchAction.NOTE_HOLD),
-        "right_button_3_function": int(SideSwitchAction.SHIFT_PAGE1),
-    }.items():
-        response_values.extend([name_to_addr[key], val])
+    # A response omitting any declared address is rejected as incomplete, so
+    # every one is present and only the values under test are overridden.
+    # Derived from the model so that adding a field cannot quietly turn this
+    # into a "missing config values" failure.
+    values = dict.fromkeys(name_to_addr.values(), 0)
+    values.update(
+        {
+            name_to_addr[key]: val
+            for key, val in {
+                "system_midi_channel": int(MidiChannel.SYSTEM),
+                "super_knob_start": 40,
+                "super_knob_end": 90,
+                "rgb_led_brightness": 99,
+                "indicator_global_brightness": 82,
+                "bank_side_buttons": int(SysexBool.FALSE),
+                "left_button_1_function": int(SideSwitchAction.BANK1),
+                "left_button_2_function": int(SideSwitchAction.BANK2),
+                "left_button_3_function": int(SideSwitchAction.BANK3),
+                "right_button_1_function": int(SideSwitchAction.BANK4),
+                "right_button_2_function": int(SideSwitchAction.NOTE_HOLD),
+                "right_button_3_function": int(SideSwitchAction.SHIFT_PAGE1),
+            }.items()
+        }
+    )
+    response_values = [byte for pair in values.items() for byte in pair]
 
     # Format response exactly like the real device
     resp = [

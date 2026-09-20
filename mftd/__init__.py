@@ -1,6 +1,7 @@
 # mylib/__init__.py
 
 from mftd.constants import (
+    ColorMap,
     MidiChannel,
     EncoderControl,
     SystemMessage,
@@ -14,6 +15,8 @@ from mftd.constants import (
     EncoderSwitchActionType,
     EncoderMidiMessageType,
     EncoderIndicatorDisplayType,
+    SleepAnimation,
+    SleepTimer,
     SysexCommand,
     SysexBool,
     SideSwitchAction,
@@ -25,6 +28,7 @@ from mftd.mft import MidiFighterTwister
 from mftd.midi import TdMidiOutput
 
 __all__ = [
+    "ColorMap",
     "MidiChannel",
     "EncoderControl",
     "SystemMessage",
@@ -38,6 +42,8 @@ __all__ = [
     "EncoderSwitchActionType",
     "EncoderMidiMessageType",
     "EncoderIndicatorDisplayType",
+    "SleepAnimation",
+    "SleepTimer",
     "SysexCommand",
     "SysexBool",
     "SideSwitchAction",

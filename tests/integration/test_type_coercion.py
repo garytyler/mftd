@@ -15,7 +15,8 @@ def test_device_config_type_coercion_on_init():
     assert isinstance(cfg.bank_side_buttons, SysexBool)
     assert cfg.bank_side_buttons == SysexBool.FALSE
     assert isinstance(cfg.left_button_1_function, SideSwitchAction)
-    assert cfg.left_button_1_function == SideSwitchAction.BANK1
+    # 8 is NEXT_BANK under the 2026 numbering; it was BANK1 before.
+    assert cfg.left_button_1_function == SideSwitchAction.NEXT_BANK
     assert isinstance(cfg.super_knob_start, int)
     assert cfg.super_knob_start == 50
 
@@ -28,4 +29,5 @@ def test_device_config_type_coercion_on_setattr():
     assert isinstance(cfg.rgb_led_brightness, int)
     assert cfg.rgb_led_brightness == 85
     assert isinstance(cfg.right_button_2_function, SideSwitchAction)
-    assert cfg.right_button_2_function == SideSwitchAction.BANK2
+    # 9 is PREV_BANK under the 2026 numbering; it was BANK2 before.
+    assert cfg.right_button_2_function == SideSwitchAction.PREV_BANK

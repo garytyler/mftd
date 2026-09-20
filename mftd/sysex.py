@@ -30,24 +30,27 @@ class MftSysexApi:
             if val is not None:
                 pairs.extend([addr, _int(val)])
 
-        header = [
+        if not pairs:
+            return
+
+        # PUSH_CONF carries no part/total fields, and the firmware reads each
+        # message as the *complete* device configuration: every address the
+        # message omits is reset to 0.  Splitting the payload therefore wipes
+        # whatever went in the earlier parts — with addrs 33-38 present the
+        # config exceeds PART_SIZE_BYTES, and the second message zeroed the
+        # global LED brightness, blacking out every encoder.  The whole config
+        # goes in one message.  BULK_XFER does have part/total, which is why
+        # set_encoder_config can chunk and this cannot.
+        payload = [
             0xF0,
             constants.MIDI_MFR_ID_0,
             constants.MIDI_MFR_ID_1,
             constants.MIDI_MFR_ID_2,
             constants.SysexCommand.PUSH_CONF,
+            *pairs,
+            0xF7,
         ]
-        payload = header.copy()
-        for i in range(0, len(pairs), 2):
-            if len(payload) - len(header) + 2 > constants.PART_SIZE_BYTES:
-                payload.append(0xF7)
-                MftSysexApi._send_sysex(midi_out, payload)
-                payload = header.copy()
-            payload.extend(pairs[i : i + 2])
-
-        if len(payload) > len(header):
-            payload.append(0xF7)
-            MftSysexApi._send_sysex(midi_out, payload)
+        MftSysexApi._send_sysex(midi_out, payload)
 
     @staticmethod
     def set_encoder_config(
