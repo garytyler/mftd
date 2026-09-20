@@ -33,7 +33,9 @@ class _AsyncIOOSCUDPServer:
     _port_counter = 10000
     _servers: dict[int, "_AsyncIOOSCUDPServer"] = {}
 
-    def __init__(self, address, dispatcher: _Dispatcher, loop: asyncio.AbstractEventLoop):
+    def __init__(
+        self, address, dispatcher: _Dispatcher, loop: asyncio.AbstractEventLoop
+    ):
         self.host, requested_port = address
         if requested_port == 0:
             requested_port = self._next_port()
@@ -93,7 +95,9 @@ class _SimpleUDPClient:
     def send_message(self, address: str, payload: Iterable) -> None:
         server = _AsyncIOOSCUDPServer._servers.get(self._port)
         if server is None:
-            raise ConnectionRefusedError(f"No OSC server listening on {self._host}:{self._port}")
+            raise ConnectionRefusedError(
+                f"No OSC server listening on {self._host}:{self._port}"
+            )
         server._loop.call_soon_threadsafe(server.enqueue, address, list(payload))
 
 

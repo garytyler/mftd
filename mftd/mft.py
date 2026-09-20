@@ -59,7 +59,7 @@ class MidiFighterTwister:
 
     def get_device_config(
         self,
-    ) -> DeviceConfig | None:
+    ) -> DeviceConfig:
         """Request and return the current device configuration."""
         if not self.midi_output or not self.midi_input:
             if is_td_available():

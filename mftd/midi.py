@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import TYPE_CHECKING, Any, cast
 
 from mftd import constants
 from mftd.protocol import MidiInput, MidiOutput
+
+if TYPE_CHECKING:
+    # TouchDesigner injects ``me`` into each script's namespace at runtime, so
+    # it has no importable definition. Declared here for the type checkers only.
+    me: Any
 
 
 class TdMidiOutput(MidiOutput):
@@ -16,9 +21,9 @@ class TdMidiOutput(MidiOutput):
         if midi_out_chop:
             self.chop = midi_out_chop
         else:
-            self.chop = me.parent().op(self.midi_out_chop_name)
+            self.chop = me.parent().op(self.midi_out_chop_name)  # noqa: F821
             if not self.chop:
-                self.chop = me.parent().create(
+                self.chop = me.parent().create(  # noqa: F821
                     self.midi_out_chop_type, self.midi_out_chop_name
                 )
 

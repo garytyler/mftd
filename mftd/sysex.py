@@ -112,7 +112,7 @@ class MftSysexApi:
         midi_out: MidiOutput,
         midi_in: MidiInput,
         timeout: float = 1.0,
-    ) -> Dict[int, int] | None:
+    ) -> Dict[int, int]:
         request = [
             0xF0,
             constants.MIDI_MFR_ID_0,
